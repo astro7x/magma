@@ -13,7 +13,7 @@
  * @flow strict-local
  * @format
  */
-import type {subscriber} from '@fbcnms/magma-api';
+import type {mutable_subscribers, subscriber} from '@fbcnms/magma-api';
 
 import ActionTable from '../../components/ActionTable';
 import ApnContext from '../../components/context/ApnContext';
@@ -116,6 +116,7 @@ const MAX_UPLOAD_FILE_SZ_BYTES = 10 * 1024 * 1024;
 const SUBSCRIBER_TITLE = 'Subscriber';
 const TRAFFIC_TITLE = 'Traffic Policy';
 const STATIC_IPS_TITLE = 'APNs Static IPs';
+const SUBSCRIBERS_CHUNK_SIZE = 1000;
 
 type SubscriberInfo = {
   name: string,
@@ -125,8 +126,42 @@ type SubscriberInfo = {
   state: 'INACTIVE' | 'ACTIVE',
   dataPlan: string,
   apns: Array<string>,
-  policies: Array<string>,
+  policies?: Array<string>,
 };
+
+const SUB_NAME_OFFSET = 0;
+const SUB_IMSI_OFFSET = 1;
+const SUB_AUTH_KEY_OFFSET = 2;
+const SUB_AUTH_OPC_OFFSET = 3;
+const SUB_STATE_OFFSET = 4;
+const SUB_DATAPLAN_OFFSET = 5;
+const SUB_APN_OFFSET = 6;
+const SUB_POLICY_OFFSET = 7;
+const SUB_MAX_FIELDS = 8;
+
+function parseSubscriber(line: string) {
+  const items = line.split(',').map(item => item.trim());
+  if (items.length > SUB_MAX_FIELDS) {
+    throw new Error(
+      `Too many fields to parse, expected ${SUB_MAX_FIELDS} fields, received ${items.length} fields`,
+    );
+  }
+
+  return {
+    name: items[SUB_NAME_OFFSET],
+    imsi: items[SUB_IMSI_OFFSET],
+    authKey: items[SUB_AUTH_KEY_OFFSET],
+    authOpc: items[SUB_AUTH_OPC_OFFSET],
+    state: items[SUB_STATE_OFFSET] === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+    dataPlan: items[SUB_DATAPLAN_OFFSET],
+    apns: items[SUB_APN_OFFSET].split('|')
+      .map(item => item.trim())
+      .filter(Boolean),
+    policies: items?.[SUB_POLICY_OFFSET]?.split('|')
+      .map(item => item.trim())
+      .filter(Boolean),
+  };
+}
 
 function parseSubscriberFile(fileObj: File) {
   const reader = new FileReader();
@@ -156,23 +191,7 @@ function parseSubscriberFile(fileObj: File) {
           .split('\n')
           .map(item => item.trim())
           .filter(Boolean)) {
-          const items = line.split(',').map(item => item.trim());
-          if (items.length != 7) {
-            reject('failed parsing ' + line);
-            return;
-          }
-          subscribers.push({
-            name: items[0],
-            imsi: items[1],
-            authKey: items[2],
-            authOpc: items[3],
-            state: items[4] === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-            dataPlan: items[5],
-            apns: items[6]
-              .split('|')
-              .map(item => item.trim())
-              .filter(Boolean),
-          });
+          subscribers.push(parseSubscriber(line));
         }
       } catch (e) {
         reject('Failed parsing the file ' + fileObj.name + '. ' + e?.message);
@@ -184,13 +203,19 @@ function parseSubscriberFile(fileObj: File) {
   });
 }
 
-export default function AddSubscriberButton() {
+export default function AddSubscriberButton(props: {onClose: () => void}) {
   const classes = useStyles();
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <AddSubscriberDialog open={open} onClose={() => setOpen(false)} />
+      <AddSubscriberDialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          props.onClose();
+        }}
+      />
       <Button onClick={() => setOpen(true)} className={classes.appBarBtn}>
         {'Add Subscriber'}
       </Button>
@@ -314,7 +339,6 @@ export function SubscriberEditDialog(props: DialogProps) {
   }, [props.editProps]);
 
   const onClose = () => {
-    setTabPos(0);
     props.onClose();
   };
 
@@ -471,7 +495,6 @@ export function SubscriberEditDialog(props: DialogProps) {
     </Dialog>
   );
 }
-
 function AddSubscriberDetails(props: DialogProps) {
   const classes = useStyles();
   const ctx = useContext(SubscriberContext);
@@ -481,7 +504,6 @@ function AddSubscriberDetails(props: DialogProps) {
   const [error, setError] = useState('');
   const [subscribers, setSubscribers] = useState<Array<SubscriberInfo>>([]);
   const successCountRef = useRef(0);
-
   const fileInput = useRef(null);
   const enqueueSnackbar = useEnqueueSnackbar();
 
@@ -495,9 +517,30 @@ function AddSubscriberDetails(props: DialogProps) {
   const policies = Array.from(
     new Set(Object.keys(policyCtx.state || {})).add('default'),
   );
+  const bulkAdd = async (
+    addedSubscribers: mutable_subscribers,
+    subscriberErrors: string,
+  ) => {
+    let success = true;
+    try {
+      if (subscriberErrors.length > 0) {
+        setError(subscriberErrors);
+        return false;
+      }
+      await ctx.setState?.('', addedSubscribers);
+      return success;
+    } catch (e) {
+      const errMsg = e.response?.data?.message ?? e.message ?? e;
+      setError('error saving subscribers: ' + errMsg);
+      success = false;
+      return success;
+    }
+  };
+
   const saveSubscribers = async () => {
-    successCountRef.current = 0;
-    for (const subscriber of subscribers) {
+    let addedSubscribers = [];
+    let subscriberErrors = '';
+    for (const [i, subscriber] of subscribers.entries()) {
       try {
         const err = validateSubscriberInfo(subscriber, ctx.state);
         if (err.length > 0) {
@@ -512,7 +555,7 @@ function AddSubscriberDetails(props: DialogProps) {
           subscriber.authOpc !== undefined && isValidHex(subscriber.authOpc)
             ? hexToBase64(subscriber.authOpc)
             : '';
-        await ctx.setState?.(subscriber.imsi, {
+        const newSubscriber = {
           active_apns: subscriber.apns,
           active_policies: subscriber.policies,
           id: subscriber.imsi,
@@ -524,12 +567,37 @@ function AddSubscriberDetails(props: DialogProps) {
             state: subscriber.state,
             sub_profile: subscriber.dataPlan,
           },
-        });
-        successCountRef.current = successCountRef.current + 1;
+        };
+        addedSubscribers.push(newSubscriber);
+        // bulk add chunked subscribers
+        if (
+          addedSubscribers.length == SUBSCRIBERS_CHUNK_SIZE ||
+          i == subscribers.length - 1
+        ) {
+          const success = await bulkAdd(addedSubscribers, subscriberErrors);
+          if (success) {
+            successCountRef.current =
+              successCountRef.current + addedSubscribers.length;
+            addedSubscribers = [];
+          } else {
+            enqueueSnackbar('Saving subscribers to the api failed: ', {
+              variant: 'error',
+            });
+            return;
+          }
+        }
       } catch (e) {
         const errMsg = e.response?.data?.message ?? e.message ?? e;
-        setError('error saving ' + subscriber.imsi + ' : ' + errMsg);
-        return;
+        subscriberErrors +=
+          'error saving ' + subscriber.imsi + ' : ' + errMsg + '\n';
+        //report saved errors if we reach end of loop without calling bulkadd.
+        if (i == subscribers.length - 1) {
+          setError(subscriberErrors);
+          enqueueSnackbar('Saving subscribers to the api failed: ', {
+            variant: 'error',
+          });
+          return;
+        }
       }
     }
     enqueueSnackbar(

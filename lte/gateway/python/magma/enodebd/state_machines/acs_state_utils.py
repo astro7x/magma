@@ -11,15 +11,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from magma.enodebd.logger import EnodebdLogger as logger
-from typing import Any, Optional, Dict, List
+from typing import Any, Dict, List, Optional
+
 from magma.enodebd.data_models.data_model import DataModel
 from magma.enodebd.data_models.data_model_parameters import ParameterName
-from magma.enodebd.device_config.enodeb_configuration import \
-    EnodebConfiguration
-from magma.enodebd.devices.device_utils import get_device_name, \
-    EnodebDeviceName
+from magma.enodebd.device_config.enodeb_configuration import EnodebConfiguration
+from magma.enodebd.devices.device_utils import EnodebDeviceName, get_device_name
 from magma.enodebd.exceptions import ConfigurationError
+from magma.enodebd.logger import EnodebdLogger as logger
 from magma.enodebd.tr069 import models
 
 
@@ -106,8 +105,10 @@ def _get_param_values_by_path(
     for param_value in inform.ParameterList.ParameterValueStruct:
         path = param_value.Name
         value = param_value.Value.Data
-        logger.debug('(Inform msg) Received parameter: %s = %s', path,
-                      value)
+        logger.debug(
+            '(Inform msg) Received parameter: %s = %s', path,
+            value,
+        )
         param_values_by_path[path] = value
     return param_values_by_path
 
@@ -130,6 +131,7 @@ def are_tr069_params_equal(param_a: Any, param_b: Any, type_: str) -> bool:
     if cmp_a.lower() in ['true', 'false']:
         cmp_a, cmp_b = map(lambda s: s.lower(), (cmp_a, cmp_b))
     return cmp_a == cmp_b
+
 
 def get_all_objects_to_add(
     desired_cfg: EnodebConfiguration,
@@ -275,10 +277,14 @@ def get_all_param_values_to_set(
     exclude_admin: bool = False,
 ) -> Dict[ParameterName, Any]:
     """ Returns a map of param names to values that we need to set """
-    param_values = get_param_values_to_set(desired_cfg, device_cfg,
-                                           data_model, exclude_admin)
-    obj_param_values = get_obj_param_values_to_set(desired_cfg, device_cfg,
-                                                   data_model)
+    param_values = get_param_values_to_set(
+        desired_cfg, device_cfg,
+        data_model, exclude_admin,
+    )
+    obj_param_values = get_obj_param_values_to_set(
+        desired_cfg, device_cfg,
+        data_model,
+    )
     for _obj_name, param_map in obj_param_values.items():
         for name, val in param_map.items():
             param_values[name] = val

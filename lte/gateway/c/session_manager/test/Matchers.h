@@ -10,17 +10,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <future>
-#include <memory>
-#include <utility>
+#include <glog/logging.h>
+#include <google/protobuf/util/message_differencer.h>
+#include <gtest/gtest.h>
 #include <stdio.h>
 
-#include <glog/logging.h>
-#include <gtest/gtest.h>
+#include <future>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "SessiondMocks.h"
-
-#include <google/protobuf/util/message_differencer.h>
 
 using ::testing::Test;
 
@@ -31,15 +32,20 @@ MATCHER_P(CheckCount, count, "") {
   return arg_count == count;
 }
 
-MATCHER_P(CheckStaticRulesNames, list_static_rules, "") {
-  std::vector<std::string> static_rules = arg;
-  if (static_rules.size() != list_static_rules.size()) {
+MATCHER_P(CheckRuleCount, count, "") {
+  int arg_count = arg.size();
+  return arg_count == count;
+}
+
+MATCHER_P(CheckRuleNames, list_static_rules, "") {
+  std::vector<RuleToProcess> to_process = arg;
+  if (to_process.size() != list_static_rules.size()) {
     return false;
   }
-  for (auto rule : list_static_rules) {
+  for (RuleToProcess val : to_process) {
     bool found = false;
-    for (auto rule_to_check : list_static_rules) {
-      if (rule == rule_to_check) {
+    for (const std::string rule_to_check : list_static_rules) {
+      if (val.rule.id() == rule_to_check) {
         found = true;
         break;
       }
@@ -51,6 +57,23 @@ MATCHER_P(CheckStaticRulesNames, list_static_rules, "") {
   return true;
 }
 
+MATCHER_P(CheckRulesToProcess, expected, "") {
+  std::vector<RuleToProcess> to_process = arg;
+  // basic size check
+  if (to_process.size() != expected.size()) {
+    return false;
+  }
+  for (RuleToProcess val : to_process) {
+    for (uint32_t i = 0; i < expected.size(); i++) {
+      if (val.rule.id() == expected[i].rule.id()) {
+        // check teids
+        return val.teids == expected[i].teids;
+      }
+    }
+  }
+  return false;
+}
+
 MATCHER_P(CheckTeids, configured_teids, "") {
   Teids pipelined_req_teids = static_cast<const Teids>(arg);
 
@@ -60,6 +83,24 @@ MATCHER_P(CheckTeids, configured_teids, "") {
   }
 
   return false;
+}
+
+MATCHER_P(CheckTeidVector, expected, "") {
+  const std::vector<Teids> req_teids =
+      static_cast<const std::vector<Teids>>(arg);
+  if (expected.size() != req_teids.size()) {
+    return false;
+  }
+  for (uint32_t i = 0; i < req_teids.size(); i++) {
+    const Teids& expected_teids = expected[i];
+    const Teids& actual_teids   = req_teids[i];
+    if ((expected_teids.agw_teid() != actual_teids.agw_teid()) ||
+        (expected_teids.enb_teid() != actual_teids.enb_teid())) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 MATCHER_P2(CheckUpdateRequestCount, monitorCount, chargingCount, "") {
@@ -96,44 +137,55 @@ MATCHER_P3(CheckTerminateRequestCount, imsi, monitorCount, chargingCount, "") {
          req.monitor_usages().size() == monitorCount;
 }
 
-MATCHER_P2(CheckActivateFlows, imsi, rule_count, "") {
-  auto request = static_cast<const ActivateFlowsRequest*>(arg);
-  return request->sid().id() == imsi && request->rule_ids_size() == rule_count;
-}
-
 MATCHER_P6(
     CheckSessionInfos, imsi_list, ip_address_list, ipv6_address_list, cfg,
-    static_rule_lists, dynamic_rule_ids_lists, "") {
+    rule_ids_lists, versions_lists, "") {
   auto infos = static_cast<const std::vector<SessionState::SessionInfo>>(arg);
 
-  if (infos.size() != imsi_list.size()) return false;
+  if (infos.size() != imsi_list.size()) {
+    return false;
+  }
 
   for (size_t i = 0; i < infos.size(); i++) {
-    if (infos[i].imsi != imsi_list[i]) return false;
-    if (infos[i].ip_addr != ip_address_list[i]) return false;
-    if (infos[i].ipv6_addr != ipv6_address_list[i]) return false;
-    if (infos[i].static_rules.size() != static_rule_lists[i].size())
+    SessionState::SessionInfo info = infos[i];
+    if (info.imsi != imsi_list[i]) {
       return false;
-    if (infos[i].dynamic_rules.size() != dynamic_rule_ids_lists[i].size())
+    }
+    if (info.ip_addr != ip_address_list[i]) {
       return false;
-    for (size_t r_index = 0; i < infos[i].static_rules.size(); i++) {
-      if (infos[i].static_rules[r_index] != static_rule_lists[i][r_index])
+    }
+    if (info.ipv6_addr != ipv6_address_list[i]) {
+      return false;
+    }
+
+    std::vector<std::string> expected_gx_rules = rule_ids_lists[i];
+    if (info.gx_rules.size() != expected_gx_rules.size()) {
+      return false;
+    }
+    for (size_t r_index = 0; i < info.gx_rules.size(); i++) {
+      if (info.gx_rules[r_index].rule.id() != expected_gx_rules[r_index])
         return false;
     }
-    for (size_t r_index = 0; i < infos[i].dynamic_rules.size(); i++) {
-      if (infos[i].dynamic_rules[r_index].id() !=
-          dynamic_rule_ids_lists[i][r_index])
+
+    std::vector<uint32_t> expected_versions = versions_lists[i];
+    for (size_t r_index = 0; i < info.gx_rules.size(); i++) {
+      if (info.gx_rules[r_index].version != expected_versions[r_index])
         return false;
     }
+
     // check ambr field if config has qos_info
     if (cfg.rat_specific_context.has_lte_context() &&
         cfg.rat_specific_context.lte_context().has_qos_info()) {
       const auto& qos_info = cfg.rat_specific_context.lte_context().qos_info();
-      if (!infos[i].ambr) {
+      if (!info.ambr) {
         return false;
-      } else if (infos[i].ambr->max_bandwidth_ul() != qos_info.apn_ambr_ul()) {
+      } else if (info.ambr->max_bandwidth_ul() != qos_info.apn_ambr_ul()) {
         return false;
-      } else if (infos[i].ambr->max_bandwidth_dl() != qos_info.apn_ambr_dl()) {
+      } else if (info.ambr->max_bandwidth_dl() != qos_info.apn_ambr_dl()) {
+        return false;
+      } else if (
+          static_cast<int>(info.ambr->br_unit()) !=
+          static_cast<int>(qos_info.br_unit())) {
         return false;
       }
     }
@@ -161,9 +213,32 @@ MATCHER_P3(CheckDeleteOneBearerReq, imsi, link_bearer_id, eps_bearer_id, "") {
 }
 
 MATCHER_P(CheckSubset, ids, "") {
-  auto request = static_cast<const std::vector<std::string>>(arg);
+  auto request = static_cast<const RulesToProcess>(arg);
   for (size_t i = 0; i < request.size(); i++) {
-    if (ids.find(request[i]) != ids.end()) {
+    if (ids.find(request[i].rule.id()) != ids.end()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+MATCHER_P(CheckPolicyID, id, "") {
+  auto request = static_cast<const RulesToProcess>(arg);
+  for (size_t i = 0; i < request.size(); i++) {
+    if (request[i].rule.id() == id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+MATCHER_P2(CheckPolicyIDs, count, ids, "") {
+  auto request = static_cast<const RulesToProcess>(arg);
+  if (request.size() != (unsigned int) count) {
+    return false;
+  }
+  for (size_t i = 0; i < request.size(); i++) {
+    if (ids.find(request[i].rule.id()) != ids.end()) {
       return true;
     }
   }
@@ -208,23 +283,16 @@ MATCHER_P(CheckTerminate, imsi, "") {
   return request->common_context().sid().id() == imsi;
 }
 
-MATCHER_P4(CheckActivateFlows, imsi, ipv4, ipv6, rule_count, "") {
-  auto request = static_cast<const ActivateFlowsRequest*>(arg);
-  auto res     = request->sid().id() == imsi &&
-             request->rule_ids_size() == rule_count &&
-             request->ip_addr() == ipv4 && request->ipv6_addr() == ipv6;
-  return res;
-}
-
 MATCHER_P6(
     CheckActivateFlowsForTunnIds, imsi, ipv4, ipv6, enb_teid, agw_teid,
     rule_count, "") {
   auto request = static_cast<const ActivateFlowsRequest*>(arg);
-  auto res     = request->sid().id() == imsi && request->ip_addr() == ipv4 &&
+  std::cerr << "Got " << request->policies_size() << " rules" << std::endl;
+  auto res = request->sid().id() == imsi && request->ip_addr() == ipv4 &&
              request->ipv6_addr() == ipv6 &&
              request->uplink_tunnel() == agw_teid &&
              request->downlink_tunnel() == enb_teid &&
-             request->rule_ids_size() == rule_count;
+             request->policies_size() == rule_count;
   return res;
 }
 

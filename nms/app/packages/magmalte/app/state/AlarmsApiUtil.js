@@ -39,6 +39,11 @@ export const MagmaAlarmsApiUtil: ApiUtil = {
     console.warn('not implemented');
     return [];
   },
+  getTroubleshootingLink: async ({alertName: _}) =>
+    Promise.resolve({
+      link: '',
+      title: 'View Troubleshooting Documentation',
+    }),
   // Alert Rules
   createAlertRule: async ({networkId, rule}) => {
     await MagmaV1API.postNetworksByNetworkIdPrometheusAlertConfig({
@@ -73,6 +78,7 @@ export const MagmaAlarmsApiUtil: ApiUtil = {
   createReceiver: async ({networkId, receiver}) => {
     await MagmaV1API.postNetworksByNetworkIdPrometheusAlertReceiver({
       networkId: nullthrows(networkId),
+      // $FlowFixMe[prop-missing]: require_tls needs to be added
       receiverConfig: receiver,
     });
   },
@@ -80,6 +86,7 @@ export const MagmaAlarmsApiUtil: ApiUtil = {
     await MagmaV1API.putNetworksByNetworkIdPrometheusAlertReceiverByReceiver({
       networkId: nullthrows(networkId),
       receiver: receiver.name,
+      // $FlowFixMe[prop-missing]: require_tls needs to be added
       receiverConfig: receiver,
     });
   },
@@ -112,6 +119,16 @@ export const MagmaAlarmsApiUtil: ApiUtil = {
       networkId: nullthrows(networkId),
     });
     return series;
+  },
+  getMetricNames: async ({networkId}) => {
+    const series = await MagmaV1API.getNetworksByNetworkIdPrometheusSeries({
+      networkId: nullthrows(networkId),
+    });
+    const names = new Set([]);
+    series.forEach(value => {
+      names.add(value.__name__);
+    });
+    return Array.from(names);
   },
 
   //alertmanager global config

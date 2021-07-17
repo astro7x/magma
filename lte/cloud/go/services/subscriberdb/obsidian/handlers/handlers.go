@@ -14,9 +14,16 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
+
+	"magma/orc8r/cloud/go/serde"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/thoas/go-funk"
 
 	"magma/lte/cloud/go/lte"
 	"magma/lte/cloud/go/serdes"
@@ -41,8 +48,10 @@ import (
 
 const (
 	Subscribers               = "subscribers"
+	SubscribersV2             = "subscribers_v2"
 	SubscriberState           = "subscriber_state"
 	ListSubscribersPath       = ltehandlers.ManageNetworkPath + obsidian.UrlSep + Subscribers
+	ListSubscribersV2Path     = ltehandlers.ManageNetworkPath + obsidian.UrlSep + SubscribersV2
 	ManageSubscriberPath      = ListSubscribersPath + obsidian.UrlSep + ":subscriber_id"
 	ListSubscriberStatePath   = ltehandlers.ManageNetworkPath + obsidian.UrlSep + SubscriberState
 	ManageSubscriberStatePath = ListSubscriberStatePath + obsidian.UrlSep + ":subscriber_id"
@@ -53,13 +62,17 @@ const (
 	listMSISDNsPath   = ltehandlers.ManageNetworkPath + obsidian.UrlSep + "msisdns"
 	manageMSISDNsPath = listMSISDNsPath + obsidian.UrlSep + ":msisdn"
 
-	ParamMSISDN = "msisdn"
-	ParamIP     = "ip"
+	ParamMSISDN    = "msisdn"
+	ParamIP        = "ip"
+	ParamPageSize  = "page_size"
+	ParamPageToken = "page_token"
 )
 
 func GetHandlers() []obsidian.Handler {
 	ret := []obsidian.Handler{
 		{Path: ListSubscribersPath, Methods: obsidian.GET, HandlerFunc: listSubscribersHandler},
+		{Path: ListSubscribersV2Path, Methods: obsidian.GET, HandlerFunc: listSubscribersV2Handler},
+		{Path: ListSubscribersV2Path, Methods: obsidian.POST, HandlerFunc: createSubscribersV2Handler},
 		{Path: ListSubscribersPath, Methods: obsidian.POST, HandlerFunc: createSubscriberHandler},
 		{Path: ManageSubscriberPath, Methods: obsidian.GET, HandlerFunc: getSubscriberHandler},
 		{Path: ManageSubscriberPath, Methods: obsidian.PUT, HandlerFunc: updateSubscriberHandler},
@@ -89,19 +102,32 @@ var (
 	// Mobilityd states are keyed as <IMSI>.<APN>.
 	mobilitydStateKeyRe = regexp.MustCompile(`^(?P<imsi>IMSI\d+)\..+$`)
 
-	subscriberLoadCriteria       = configurator.EntityLoadCriteria{LoadMetadata: true, LoadConfig: true, LoadAssocsFromThis: true}
 	apnPolicyProfileLoadCriteria = configurator.EntityLoadCriteria{LoadAssocsFromThis: true, LoadAssocsToThis: true}
 )
 
-var subscriberStateTypes = []string{
+// The following slices comprise the various state types that make up
+// subscriber state. Here the state types are separated to allow for more
+// efficient state lookup for paginated subscriber requests.
+
+// subscriberStateTypesKeyedByIMSI is a slice of subscriber state types whose
+// deviceID is an IMSI.
+var subscriberStateTypesKeyedByIMSI = []string{
 	lte.ICMPStateType,
 	lte.MMEStateType,
-	lte.MobilitydStateType,
 	lte.S1APStateType,
 	lte.SPGWStateType,
 	lte.SubscriberStateType,
 	orc8r.DirectoryRecordType,
 }
+
+// subscriberStateTypesKeyedByCompositeKey is a slice of subscriber state
+// types whose deviceID is a composite key with format <IMSI>.<APN>.
+var subscriberStateTypesKeyedByCompositeKey = []string{
+	lte.MobilitydStateType,
+}
+
+// allSubscriberStateTypes is a composite of all subscriber state types.
+var allSubscriberStateTypes = append(subscriberStateTypesKeyedByIMSI, subscriberStateTypesKeyedByCompositeKey...)
 
 type subscriberFilter func(sub *subscribermodels.Subscriber) bool
 
@@ -127,36 +153,129 @@ func listSubscribersHandler(c echo.Context) error {
 	}
 
 	// First check for query params to filter by
+	reqCtx := c.Request().Context()
 	if msisdn := c.QueryParam(ParamMSISDN); msisdn != "" {
-		queryIMSI, err := subscriberdb.GetIMSIForMSISDN(networkID, msisdn)
+		queryIMSI, err := subscriberdb.GetIMSIForMSISDN(reqCtx, networkID, msisdn)
 		if err != nil {
 			return makeErr(err)
 		}
-		subs, err := loadSubscribers(networkID, acceptAll, queryIMSI)
+		subs, err := loadSubscribers(reqCtx, networkID, acceptAll, queryIMSI)
 		if err != nil {
 			return makeErr(err)
 		}
 		return c.JSON(http.StatusOK, subs)
 	}
 	if ip := c.QueryParam(ParamIP); ip != "" {
-		queryIMSIs, err := subscriberdb.GetIMSIsForIP(networkID, ip)
+		queryIMSIs, err := subscriberdb.GetIMSIsForIP(reqCtx, networkID, ip)
 		if err != nil {
 			return makeErr(err)
 		}
 		filter := func(sub *subscribermodels.Subscriber) bool { return sub.IsAssignedIP(ip) }
-		subs, err := loadSubscribers(networkID, filter, queryIMSIs...)
+		subs, err := loadSubscribers(reqCtx, networkID, filter, queryIMSIs...)
 		if err != nil {
 			return makeErr(err)
 		}
 		return c.JSON(http.StatusOK, subs)
 	}
 
-	// Default to listing all subscribers
-	subs, err := loadAllSubscribers(networkID)
+	// No pagination is used for the v1 endpoint, so load the max page size
+	subs, _, err := loadSubscriberPage(reqCtx, networkID, 0, "")
 	if err != nil {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, subs)
+}
+
+// listSubscribersV2Handler handles version 2 of the subscriber endpoint.
+// The returned subscribers can be filtered using the following query
+// parameters
+//	- msisdn
+//	- ip
+//
+// The MSISDN parameter is config-based, and is enforced to be a unique
+// identifier.
+//
+// The IP parameter is state-based, and not guaranteed to be unique. The
+// IP->IMSI mapping is cached as the output of a mobilityd state indexer, then
+// each reported subscriber is checked to ensure it actually is assigned the
+// requested IP.
+//
+// The returned subscribers can be paginated using the following parameters
+//  - page_size
+//  - page_token
+//
+// The page size parameter specifies the maximum number of subscribers to
+// return.
+//
+// The page token parameter is an opaque token used to fetch the next page of
+// subscribers. Each API response will contain a page token that can be used
+// to fetch the next page.
+func listSubscribersV2Handler(c echo.Context) error {
+	networkID, nerr := obsidian.GetNetworkId(c)
+	if nerr != nil {
+		return nerr
+	}
+
+	var pageSize uint64 = 0
+	var err error
+	if pageSizeParam := c.QueryParam(ParamPageSize); pageSizeParam != "" {
+		pageSize, err = strconv.ParseUint(pageSizeParam, 10, 32)
+		if err != nil {
+			err := fmt.Errorf("invalid page size parameter: %s", err)
+			return obsidian.HttpError(err, http.StatusBadRequest)
+		}
+	}
+	pageToken := c.QueryParam(ParamPageToken)
+	reqCtx := c.Request().Context()
+
+	// First check for query params to filter by
+	if msisdn := c.QueryParam(ParamMSISDN); msisdn != "" {
+		queryIMSI, err := subscriberdb.GetIMSIForMSISDN(reqCtx, networkID, msisdn)
+		if err != nil {
+			return makeErr(err)
+		}
+		subs, err := loadSubscribers(reqCtx, networkID, acceptAll, queryIMSI)
+		if err != nil {
+			return makeErr(err)
+		}
+		return c.JSON(http.StatusOK, subs)
+	}
+	if ip := c.QueryParam(ParamIP); ip != "" {
+		queryIMSIs, err := subscriberdb.GetIMSIsForIP(reqCtx, networkID, ip)
+		if err != nil {
+			return makeErr(err)
+		}
+		filter := func(sub *subscribermodels.Subscriber) bool { return sub.IsAssignedIP(ip) }
+		subs, err := loadSubscribers(reqCtx, networkID, filter, queryIMSIs...)
+		if err != nil {
+			return makeErr(err)
+		}
+		return c.JSON(http.StatusOK, subs)
+	}
+
+	// List subscribers for a given page. If no page is specified, the max
+	// size will be returned.
+	subs, nextPageToken, err := loadSubscriberPage(reqCtx, networkID, uint32(pageSize), pageToken)
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusInternalServerError)
+	}
+
+	// get total number of subscribers
+	loadCriteria := configurator.EntityLoadCriteria{}
+	count, err := configurator.CountEntitiesOfType(
+		networkID,
+		lte.SubscriberEntityType,
+		loadCriteria,
+		serdes.Entity)
+	if err != nil {
+		return c.JSON(http.StatusOK, nil)
+	}
+	paginatedSubs := subscribermodels.PaginatedSubscribers{
+		TotalCount:    int64(count),
+		NextPageToken: subscribermodels.NextPageToken(nextPageToken),
+		Subscribers:   subs,
+	}
+	return c.JSON(http.StatusOK, paginatedSubs)
 }
 
 func createSubscriberHandler(c echo.Context) error {
@@ -172,13 +291,38 @@ func createSubscriberHandler(c echo.Context) error {
 	if err := payload.ValidateModel(); err != nil {
 		return obsidian.HttpError(err, http.StatusBadRequest)
 	}
-	if nerr := validateSubscriberProfile(networkID, payload.Lte); nerr != nil {
+	if nerr := validateSubscriberProfiles(networkID, string(payload.Lte.SubProfile)); nerr != nil {
 		return nerr
 	}
 
-	err := createSubscriber(networkID, payload)
-	if err != nil {
-		return obsidian.HttpError(err, http.StatusInternalServerError)
+	nerr = createSubscribers(networkID, payload)
+	if nerr != nil {
+		return nerr
+	}
+
+	return c.NoContent(http.StatusCreated)
+}
+
+func createSubscribersV2Handler(c echo.Context) error {
+	networkID, nerr := obsidian.GetNetworkId(c)
+	if nerr != nil {
+		return nerr
+	}
+
+	payload := subscribermodels.MutableSubscribers{}
+	if err := c.Bind(&payload); err != nil {
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+	if err := payload.ValidateModel(); err != nil {
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+	if nerr := validateSubscriberProfiles(networkID, getSubProfiles(payload)...); nerr != nil {
+		return nerr
+	}
+
+	nerr = createSubscribers(networkID, payload...)
+	if nerr != nil {
+		return nerr
 	}
 
 	return c.NoContent(http.StatusCreated)
@@ -189,7 +333,7 @@ func getSubscriberHandler(c echo.Context) error {
 	if nerr != nil {
 		return nerr
 	}
-	subs, err := loadSubscriber(networkID, subscriberID)
+	subs, err := loadSubscriber(c.Request().Context(), networkID, subscriberID)
 	if err != nil {
 		return makeErr(err)
 	}
@@ -214,7 +358,7 @@ func updateSubscriberHandler(c echo.Context) error {
 		return obsidian.HttpError(err, http.StatusBadRequest)
 	}
 
-	if nerr := validateSubscriberProfile(networkID, payload.Lte); nerr != nil {
+	if nerr := validateSubscriberProfiles(networkID, string(payload.Lte.SubProfile)); nerr != nil {
 		return nerr
 	}
 
@@ -247,7 +391,7 @@ func listSubscriberStateHandler(c echo.Context) error {
 		return nerr
 	}
 
-	statesBySID, err := loadAllStatesBySID(networkID)
+	statesBySID, err := loadAllStatesForIMSIs(c.Request().Context(), networkID, []string{})
 	if err != nil {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
@@ -266,7 +410,7 @@ func getSubscriberStateHandler(c echo.Context) error {
 		return nerr
 	}
 
-	states, err := state.SearchStates(networkID, subscriberStateTypes, nil, &subscriberID, serdes.State)
+	states, err := getStatesForIMSIs(c.Request().Context(), networkID, allSubscriberStateTypes, subscriberID, serdes.State)
 	if err != nil {
 		return makeErr(err)
 	}
@@ -281,7 +425,7 @@ func listMSISDNsHandler(c echo.Context) error {
 		return nerr
 	}
 
-	msisdns, err := subscriberdb.ListMSISDNs(networkID)
+	msisdns, err := subscriberdb.ListMSISDNs(c.Request().Context(), networkID)
 	if err != nil {
 		return makeErr(err)
 	}
@@ -307,7 +451,7 @@ func createMSISDNsHandler(c echo.Context) error {
 		return obsidian.HttpError(err, http.StatusBadRequest)
 	}
 
-	err := subscriberdb.SetIMSIForMSISDN(networkID, string(payload.Msisdn), string(payload.ID))
+	err := subscriberdb.SetIMSIForMSISDN(c.Request().Context(), networkID, string(payload.Msisdn), string(payload.ID))
 	if err != nil {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
@@ -320,7 +464,7 @@ func getMSISDNHandler(c echo.Context) error {
 	if nerr != nil {
 		return nerr
 	}
-	imsi, err := subscriberdb.GetIMSIForMSISDN(networkID, msisdn)
+	imsi, err := subscriberdb.GetIMSIForMSISDN(c.Request().Context(), networkID, msisdn)
 	if err != nil {
 		return makeErr(err)
 	}
@@ -333,7 +477,7 @@ func deleteMSISDNHandler(c echo.Context) error {
 		return nerr
 	}
 
-	err := subscriberdb.DeleteMSISDN(networkID, msisdn)
+	err := subscriberdb.DeleteMSISDN(c.Request().Context(), networkID, msisdn)
 	if err != nil {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
@@ -362,7 +506,7 @@ func updateSubscriberProfile(c echo.Context) error {
 
 	desiredCfg := currentCfg.(*subscribermodels.SubscriberConfig)
 	desiredCfg.Lte.SubProfile = *payload
-	if nerr := validateSubscriberProfile(networkID, desiredCfg.Lte); nerr != nil {
+	if nerr := validateSubscriberProfiles(networkID, string(desiredCfg.Lte.SubProfile)); nerr != nil {
 		return nerr
 	}
 
@@ -399,6 +543,31 @@ func makeSubscriberStateHandler(desiredState string) echo.HandlerFunc {
 	}
 }
 
+func getStatesForIMSIs(ctx context.Context, networkID string, typeFilter []string, keyPrefix string, serdes serde.Registry) (state_types.StatesByID, error) {
+	states, err := state.SearchStates(ctx, networkID, typeFilter, nil, &keyPrefix, serdes)
+	if err != nil {
+		return nil, err
+	}
+	// Returned states contain matches by prefix, so filter out non-exact matches
+	for stateID := range states {
+		imsi := stateID.DeviceID
+		if stateID.Type == lte.MobilitydStateType {
+			matches := mobilitydStateKeyRe.FindStringSubmatch(stateID.DeviceID)
+			if len(matches) != mobilitydStateExpectedMatchCount {
+				glog.Infof("state device ID '%s' with type '%s' did not match IMSI-prefixed regex", stateID.DeviceID, stateID.Type)
+				continue
+			}
+			imsi = matches[1]
+		}
+
+		if imsi != keyPrefix {
+			delete(states, stateID)
+		}
+	}
+
+	return states, nil
+}
+
 func getNetworkAndSubIDs(c echo.Context) (string, string, *echo.HTTPError) {
 	vals, err := obsidian.GetParamValues(c, "network_id", "subscriber_id")
 	if err != nil {
@@ -415,29 +584,47 @@ func getNetworkAndMSISDN(c echo.Context) (string, string, *echo.HTTPError) {
 	return vals[0], vals[1], nil
 }
 
-func validateSubscriberProfile(networkID string, sub *subscribermodels.LteSubscription) *echo.HTTPError {
-	// Check the sub profiles available on the network if sub profile is not
-	// default (which is always available)
-	if sub.SubProfile != "default" {
-		netConf, err := configurator.LoadNetworkConfig(networkID, lte.CellularNetworkConfigType, serdes.Network)
-		switch {
-		case err == merrors.ErrNotFound:
-			return obsidian.HttpError(errors.New("no cellular config found for network"), http.StatusInternalServerError)
-		case err != nil:
-			return obsidian.HttpError(err, http.StatusInternalServerError)
-		}
+func getSubProfiles(subs subscribermodels.MutableSubscribers) []string {
+	profiles := map[string]struct{}{}
+	for _, sub := range subs {
+		profiles[string(sub.Lte.SubProfile)] = struct{}{}
+	}
+	return funk.Keys(profiles).([]string)
+}
 
-		cellNetConf := netConf.(*ltemodels.NetworkCellularConfigs)
-		profName := string(sub.SubProfile)
-		if _, profileExists := cellNetConf.Epc.SubProfiles[profName]; !profileExists {
-			return obsidian.HttpError(errors.Errorf("subscriber profile %s does not exist for the network", profName), http.StatusBadRequest)
+func validateSubscriberProfiles(networkID string, profiles ...string) *echo.HTTPError {
+	nonDefaultProfiles := funk.FilterString(profiles, func(s string) bool { return s != "default" })
+
+	if len(nonDefaultProfiles) == 0 {
+		return nil
+	}
+
+	networkConfig, err := configurator.LoadNetworkConfig(networkID, lte.CellularNetworkConfigType, serdes.Network)
+	if err == merrors.ErrNotFound {
+		return obsidian.HttpError(errors.New("no cellular config found for network"), http.StatusBadRequest)
+	}
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusInternalServerError)
+	}
+
+	networkProfiles := networkConfig.(*ltemodels.NetworkCellularConfigs).Epc.SubProfiles
+	errs := &multierror.Error{}
+	for _, p := range nonDefaultProfiles {
+		if _, ok := networkProfiles[p]; !ok {
+			multierror.Append(errs, errors.Errorf("subscriber profile '%s' does not exist for the network", p))
 		}
 	}
+	err = errs.ErrorOrNil()
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+
 	return nil
 }
 
-func loadSubscriber(networkID, key string) (*subscribermodels.Subscriber, error) {
-	ent, err := configurator.LoadEntity(networkID, lte.SubscriberEntityType, key, subscriberLoadCriteria, serdes.Entity)
+func loadSubscriber(ctx context.Context, networkID, key string) (*subscribermodels.Subscriber, error) {
+	loadCriteria := getSubscriberLoadCriteria(0, "")
+	ent, err := configurator.LoadEntity(networkID, lte.SubscriberEntityType, key, loadCriteria, serdes.Entity)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +650,7 @@ func loadSubscriber(networkID, key string) (*subscribermodels.Subscriber, error)
 		return nil, err
 	}
 
-	states, err := state.SearchStates(networkID, subscriberStateTypes, nil, &key, serdes.State)
+	states, err := getStatesForIMSIs(ctx, networkID, allSubscriberStateTypes, key, serdes.State)
 	if err != nil {
 		return nil, err
 	}
@@ -473,10 +660,10 @@ func loadSubscriber(networkID, key string) (*subscribermodels.Subscriber, error)
 	return sub, nil
 }
 
-func loadSubscribers(networkID string, includeSub subscriberFilter, keys ...string) (map[string]*subscribermodels.Subscriber, error) {
+func loadSubscribers(ctx context.Context, networkID string, includeSub subscriberFilter, keys ...string) (map[string]*subscribermodels.Subscriber, error) {
 	subs := map[string]*subscribermodels.Subscriber{}
 	for _, key := range keys {
-		sub, err := loadSubscriber(networkID, key)
+		sub, err := loadSubscriber(ctx, networkID, key)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error loading subscriber %s", key)
 		}
@@ -487,15 +674,18 @@ func loadSubscribers(networkID string, includeSub subscriberFilter, keys ...stri
 	return subs, nil
 }
 
-func loadAllSubscribers(networkID string) (map[string]*subscribermodels.Subscriber, error) {
-	mutableSubs, err := loadAllMutableSubscribers(networkID)
+func loadSubscriberPage(ctx context.Context, networkID string, pageSize uint32, pageToken string) (map[string]*subscribermodels.Subscriber, string, error) {
+	mutableSubs, nextPageToken, err := loadMutableSubscriberPage(networkID, pageSize, pageToken)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-
-	states, err := loadAllStatesBySID(networkID)
+	imsis := make([]string, 0, len(mutableSubs))
+	for imsi := range mutableSubs {
+		imsis = append(imsis, imsi)
+	}
+	states, err := loadAllStatesForIMSIs(ctx, networkID, imsis)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	subs := map[string]*subscribermodels.Subscriber{}
@@ -505,21 +695,22 @@ func loadAllSubscribers(networkID string) (map[string]*subscribermodels.Subscrib
 		subs[string(sub.ID)] = sub
 	}
 
-	return subs, nil
+	return subs, nextPageToken, nil
 }
 
-func loadAllMutableSubscribers(networkID string) (map[string]*subscribermodels.MutableSubscriber, error) {
-	ents, err := configurator.LoadAllEntitiesOfType(networkID, lte.SubscriberEntityType, subscriberLoadCriteria, serdes.Entity)
+func loadMutableSubscriberPage(networkID string, pageSize uint32, pageToken string) (map[string]*subscribermodels.MutableSubscriber, string, error) {
+	loadCriteria := getSubscriberLoadCriteria(pageSize, pageToken)
+	ents, nextPageToken, err := configurator.LoadAllEntitiesOfType(networkID, lte.SubscriberEntityType, loadCriteria, serdes.Entity)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	profileEnts, err := configurator.LoadAllEntitiesOfType(
+	profileEnts, _, err := configurator.LoadAllEntitiesOfType(
 		networkID, lte.APNPolicyProfileEntityType,
 		apnPolicyProfileLoadCriteria,
 		serdes.Entity,
 	)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	profileEntsBySub := profileEnts.MakeByParentTK()
 
@@ -527,14 +718,50 @@ func loadAllMutableSubscribers(networkID string) (map[string]*subscribermodels.M
 	for _, ent := range ents {
 		sub, err := (&subscribermodels.MutableSubscriber{}).FromEnt(ent, profileEntsBySub[ent.GetTypeAndKey()])
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		subs[ent.Key] = sub
 	}
-	return subs, nil
+	return subs, nextPageToken, nil
 }
 
-func createSubscriber(networkID string, sub *subscribermodels.MutableSubscriber) error {
+func createSubscribers(networkID string, subs ...*subscribermodels.MutableSubscriber) *echo.HTTPError {
+	var ents configurator.NetworkEntities
+	var ids []string
+	uniqueIDs := map[string]int{}
+
+	for _, s := range subs {
+		ents = append(ents, getCreateSubscriberEnts(s)...)
+
+		id := string(s.ID)
+		ids = append(ids, id)
+		uniqueIDs[id] = uniqueIDs[id] + 1
+	}
+
+	if len(uniqueIDs) != len(ids) {
+		duplicates := funk.FilterString(ids, func(s string) bool { return uniqueIDs[s] > 1 })
+		return obsidian.HttpError(errors.Errorf("found multiple subscriber models for IDs: %+v", duplicates), http.StatusBadRequest)
+	}
+
+	// TODO(hcgatewood) iterate over this to remove "too many placeholders" error
+	tks := storage.MakeTKs(lte.SubscriberEntityType, ids)
+	found, _, err := configurator.LoadSerializedEntities(networkID, nil, nil, nil, tks, configurator.EntityLoadCriteria{})
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusInternalServerError)
+	}
+	if len(found) != 0 {
+		return obsidian.HttpError(errors.Errorf("found %v existing subscribers which would have been overwritten: %+v", len(found), found.TKs()), http.StatusBadRequest)
+	}
+
+	_, err = configurator.CreateEntities(networkID, ents, serdes.Entity)
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusInternalServerError)
+	}
+
+	return nil
+}
+
+func getCreateSubscriberEnts(sub *subscribermodels.MutableSubscriber) configurator.NetworkEntities {
 	// New ents
 	//	- active_policies_by_apn
 	//		- Assocs: policy_rule..., apn
@@ -556,12 +783,7 @@ func createSubscriber(networkID string, sub *subscribermodels.MutableSubscriber)
 	ents = append(ents, sub.ActivePoliciesByApn.ToEntities(subEnt.Key)...)
 	ents = append(ents, subEnt)
 
-	_, err := configurator.CreateEntities(networkID, ents, serdes.Entity)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ents
 }
 
 func updateSubscriber(networkID string, sub *subscribermodels.MutableSubscriber) error {
@@ -648,12 +870,33 @@ func deleteSubscriber(networkID, key string) error {
 	return nil
 }
 
-func loadAllStatesBySID(networkID string) (map[string]state_types.StatesByID, error) {
-	states, err := state.SearchStates(networkID, subscriberStateTypes, nil, nil, serdes.State)
+// loadAllStatesForIMSIs loads all states whose IMSI prefix is contained in the
+// IMSI array passed in as argument. If passed IMSIs is nil,
+// loads states for all IMSIs in the network.
+func loadAllStatesForIMSIs(ctx context.Context, networkID string, imsis []string) (map[string]state_types.StatesByID, error) {
+	requestedIMSIs := map[string]struct{}{}
+	for _, v := range imsis {
+		requestedIMSIs[v] = struct{}{}
+	}
+
+	shouldLoadState := func(imsi string) bool {
+		if len(requestedIMSIs) == 0 {
+			// load all states regardless of their IMSIs if requested IMSIs is nil,
+			return true
+		}
+		_, ok := requestedIMSIs[imsi]
+		return ok
+	}
+
+	imsiKeyStates, err := state.SearchStates(ctx, networkID, subscriberStateTypesKeyedByIMSI, imsis, nil, serdes.State)
 	if err != nil {
 		return nil, err
 	}
-
+	imsiCompositeKeyStates, err := state.SearchStates(ctx, networkID, subscriberStateTypesKeyedByCompositeKey, nil, nil, serdes.State)
+	if err != nil {
+		return nil, err
+	}
+	states := mergeStates(imsiKeyStates, imsiCompositeKeyStates)
 	// Each entry in this map contains all the states that the SID cares about.
 	// The DeviceID fields of the state IDs in the nested maps do not have to
 	// match the SID, as in the case of mobilityd state for example.
@@ -664,6 +907,9 @@ func loadAllStatesBySID(networkID string) (map[string]state_types.StatesByID, er
 			matches := mobilitydStateKeyRe.FindStringSubmatch(stateID.DeviceID)
 			if len(matches) != mobilitydStateExpectedMatchCount {
 				glog.Errorf("mobilityd state composite ID %s did not match regex", sidKey)
+				continue
+			}
+			if !shouldLoadState(matches[1]) {
 				continue
 			}
 			sidKey = matches[1]
@@ -687,6 +933,24 @@ func makeSubscriberState(subscriberID string, states state_types.StatesByID) *su
 		return &subscribermodels.SubscriberState{}
 	}
 	return sub.State
+}
+
+func mergeStates(s1 state_types.StatesByID, s2 state_types.StatesByID) state_types.StatesByID {
+	for id, state := range s2 {
+		s1[id] = state
+	}
+	return s1
+}
+
+func getSubscriberLoadCriteria(pageSize uint32, pageToken string) configurator.EntityLoadCriteria {
+	loadCriteria := configurator.EntityLoadCriteria{
+		LoadMetadata:       true,
+		LoadConfig:         true,
+		LoadAssocsFromThis: true,
+		PageSize:           pageSize,
+		PageToken:          pageToken,
+	}
+	return loadCriteria
 }
 
 func makeErr(err error) *echo.HTTPError {

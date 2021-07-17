@@ -12,39 +12,52 @@ limitations under the License.
 """
 # pylint: disable=broad-except
 
-import logging
 import json
-import jsonpickle
-import grpc
+import logging
 
+import grpc
+import jsonpickle
+from google.protobuf.json_format import MessageToDict
 from magma.common.grpc_client_manager import GRPCClientManager
-from magma.common.service import MagmaService
+from magma.common.rpc_utils import grpc_async_wrapper
 from magma.common.sdwatchdog import SDWatchdogTask
+from magma.common.service import MagmaService
 from magma.state.garbage_collector import GarbageCollector
 from magma.state.keys import make_mem_key, make_scoped_device_id
-from magma.state.redis_dicts import get_json_redis_dicts, \
-    get_proto_redis_dicts, PROTO_FORMAT
-from orc8r.protos.state_pb2 import ReportStatesRequest, SyncStatesRequest, \
-    IDAndVersion, StateID
+from magma.state.redis_dicts import (
+    PROTO_FORMAT,
+    get_json_redis_dicts,
+    get_proto_redis_dicts,
+)
 from orc8r.protos.service303_pb2 import State
-from magma.common.rpc_utils import grpc_async_wrapper
-from google.protobuf.json_format import MessageToDict
+from orc8r.protos.state_pb2 import (
+    IDAndVersion,
+    ReportStatesRequest,
+    StateID,
+    SyncStatesRequest,
+)
 
 # TODO: Make DEFAULT_SYNC_INTERVAL an mconfig parameter
 DEFAULT_SYNC_INTERVAL = 60
 DEFAULT_GRPC_TIMEOUT = 10
 GARBAGE_COLLECTION_ITERATION_INTERVAL = 2
 
+
 class StateReplicator(SDWatchdogTask):
     """
     StateReplicator periodically fetches all configured state from Redis,
     reporting any updates to the Orchestrator State service.
     """
-    def __init__(self,
-                 service: MagmaService,
-                 garbage_collector: GarbageCollector,
-                 grpc_client_manager: GRPCClientManager):
-        sync_interval = service.config.get('sync_interval', DEFAULT_SYNC_INTERVAL)
+
+    def __init__(
+        self,
+        service: MagmaService,
+        garbage_collector: GarbageCollector,
+        grpc_client_manager: GRPCClientManager,
+    ):
+        sync_interval = service.config.get(
+            'sync_interval', DEFAULT_SYNC_INTERVAL,
+        )
         super().__init__(sync_interval, service.loop)
         self._service = service
         # Garbage collector to propagate deletions back to Orchestrator
@@ -75,8 +88,10 @@ class StateReplicator(SDWatchdogTask):
             try:
                 await self._resync()
             except grpc.RpcError as err:
-                logging.error("GRPC call failed for initial state re-sync: %s",
-                              err)
+                logging.error(
+                    "GRPC call failed for initial state re-sync: %s",
+                    err,
+                )
                 return
         request = await self._collect_states_to_replicate()
         if request is not None:
@@ -96,8 +111,10 @@ class StateReplicator(SDWatchdogTask):
             for key in redis_dict:
                 version = redis_dict.get_version(key)
                 device_id = make_scoped_device_id(key, redis_dict.state_scope)
-                state_id = StateID(type=redis_dict.redis_type,
-                                   deviceID=device_id)
+                state_id = StateID(
+                    type=redis_dict.redis_type,
+                    deviceID=device_id,
+                )
                 id_and_version = IDAndVersion(id=state_id, version=version)
                 states_to_sync.append(id_and_version)
 
@@ -111,11 +128,14 @@ class StateReplicator(SDWatchdogTask):
                 request,
                 DEFAULT_GRPC_TIMEOUT,
             ),
-            self._loop)
+            self._loop,
+        )
         unsynced_states = set()
         for id_and_version in response.unsyncedStates:
-            unsynced_states.add((id_and_version.id.type,
-                                 id_and_version.id.deviceID))
+            unsynced_states.add((
+                id_and_version.id.type,
+                id_and_version.id.deviceID,
+            ))
         # Update in-memory map to add already synced states
         for state in request.states:
             in_mem_key = make_mem_key(state.id.deviceID, state.id.type)
@@ -133,15 +153,19 @@ class StateReplicator(SDWatchdogTask):
                 device_id = make_scoped_device_id(key, redis_dict.state_scope)
 
                 in_mem_key = make_mem_key(device_id, redis_dict.redis_type)
-                if redis_state == None:
-                    logging.debug("Content of key %s is empty, skipping", in_mem_key)
+                if redis_state is None:
+                    logging.debug(
+                        "Content of key %s is empty, skipping", in_mem_key,
+                    )
                     continue
 
                 redis_version = redis_dict.get_version(key)
                 self._state_keys_from_current_iteration.add(in_mem_key)
                 if in_mem_key in self._state_versions and \
                         self._state_versions[in_mem_key] == redis_version:
-                    logging.debug("key %s already read on this iteration, skipping", in_mem_key)
+                    logging.debug(
+                        "key %s already read on this iteration, skipping", in_mem_key,
+                    )
                     continue
 
                 try:
@@ -151,18 +175,26 @@ class StateReplicator(SDWatchdogTask):
                     else:
                         serialized_json_state = jsonpickle.encode(redis_state)
                 except Exception as e:  # pylint: disable=broad-except
-                    logging.error("Found bad state for %s for %s, not "
-                                  "replicating this state: %s",
-                                  key, device_id, e)
+                    logging.error(
+                        "Found bad state for %s for %s, not "
+                        "replicating this state: %s",
+                        key, device_id, e,
+                    )
                     continue
 
-                state_proto = State(type=redis_dict.redis_type,
-                      deviceID=device_id,
-                      value=serialized_json_state.encode("utf-8"),
-                      version=redis_version)
+                state_proto = State(
+                    type=redis_dict.redis_type,
+                    deviceID=device_id,
+                    value=serialized_json_state.encode(
+                        "utf-8",
+                    ),
+                    version=redis_version,
+                )
 
-                logging.debug("key with version, %s contains: %s", in_mem_key,
-                              serialized_json_state)
+                logging.debug(
+                    "key with version, %s contains: %s", in_mem_key,
+                    serialized_json_state,
+                )
                 states_to_report.append(state_proto)
 
         if len(states_to_report) == 0:
@@ -178,7 +210,8 @@ class StateReplicator(SDWatchdogTask):
                     request,
                     DEFAULT_GRPC_TIMEOUT,
                 ),
-                self._loop)
+                self._loop,
+            )
 
         except grpc.RpcError as err:
             logging.error("GRPC call failed for state replication: %s", err)
@@ -187,7 +220,8 @@ class StateReplicator(SDWatchdogTask):
             for idAndError in response.unreportedStates:
                 logging.warning(
                     "Failed to replicate state for (%s,%s): %s",
-                    idAndError.type, idAndError.deviceID, idAndError.error)
+                    idAndError.type, idAndError.deviceID, idAndError.error,
+                )
                 unreplicated_states.add((idAndError.type, idAndError.deviceID))
             # Update in-memory map for successfully reported states
             for state in request.states:
@@ -196,11 +230,13 @@ class StateReplicator(SDWatchdogTask):
                 in_mem_key = make_mem_key(state.deviceID, state.type)
                 self._state_versions[in_mem_key] = state.version
 
-                logging.debug("Successfully replicated state for: "
-                              "deviceID: %s,"
-                              "type: %s, "
-                              "version: %d",
-                              state.deviceID, state.type, state.version)
+                logging.debug(
+                    "Successfully replicated state for: "
+                    "deviceID: %s,"
+                    "type: %s, "
+                    "version: %d",
+                    state.deviceID, state.type, state.version,
+                )
         finally:
             # reset timeout to config-specified + some buffer
             self.set_timeout(self._interval * 2)
@@ -211,5 +247,3 @@ class StateReplicator(SDWatchdogTask):
         for key in deleted_keys:
             del self._state_versions[key]
         self._state_keys_from_current_iteration = set()
-
-

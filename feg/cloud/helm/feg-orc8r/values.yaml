@@ -41,7 +41,7 @@ controller:
       user: postgres
       pass: postgres
     service_registry:
-      mode: "yaml"
+      mode: "k8s"
 
   podAnnotations: {}
 
@@ -91,6 +91,11 @@ feg_relay:
     annotations: {}
 
 health:
+  service:
+    labels: {}
+    annotations: {}
+
+base_acct:
   service:
     labels: {}
     annotations: {}

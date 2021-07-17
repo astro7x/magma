@@ -87,6 +87,12 @@ type EventRowType = {
   tag: string,
 };
 
+export const EVENT_STREAM = {
+  NETWORK: 'NETWORK',
+  GATEWAY: 'GATEWAY',
+  SUBSCRIBER: 'SUBSCRIBER',
+};
+
 type EventDescriptionProps = {
   rowData: EventRowType,
 };
@@ -253,7 +259,7 @@ export default function EventsTable(props: EventTableProps) {
   let actionTableOptions = {
     actionsColumnIndex: -1,
     pageSize: 5,
-    pageSizeOptions: [10, 20],
+    pageSizeOptions: [5, 10, 20],
     toolbar: false,
   };
 

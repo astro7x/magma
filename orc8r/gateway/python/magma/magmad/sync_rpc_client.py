@@ -13,19 +13,19 @@ limitations under the License.
 import asyncio
 import logging
 import queue
+import random
 import threading
 import time
+from typing import List
 
 import grpc
-import random
-from magma.common.service_registry import ServiceRegistry
-from magma.common.rpc_utils import is_grpc_error_retryable
-from magma.magmad.proxy_client import ControlProxyHttpClient
-from orc8r.protos.sync_rpc_service_pb2 import SyncRPCResponse, SyncRPCRequest
-from orc8r.protos.sync_rpc_service_pb2_grpc import SyncRPCServiceStub
-
-from typing import List
 import magma.magmad.events as magmad_events
+from google.protobuf.json_format import MessageToJson
+from magma.common.rpc_utils import is_grpc_error_retryable
+from magma.common.service_registry import ServiceRegistry
+from magma.magmad.proxy_client import ControlProxyHttpClient
+from orc8r.protos.sync_rpc_service_pb2 import SyncRPCRequest, SyncRPCResponse
+from orc8r.protos.sync_rpc_service_pb2_grpc import SyncRPCServiceStub
 
 
 class SyncRPCClient(threading.Thread):
@@ -36,7 +36,10 @@ class SyncRPCClient(threading.Thread):
 
     RETRY_MAX_DELAY_SECS = 10  # seconds
 
-    def __init__(self, loop, response_timeout: int):
+    def __init__(
+        self, loop, response_timeout: int,
+        print_grpc_payload: bool = False,
+    ):
         threading.Thread.__init__(self)
         # a synchronized queue
         self._response_queue = queue.Queue()
@@ -50,6 +53,7 @@ class SyncRPCClient(threading.Thread):
         self._current_delay = 0
         self._last_conn_time = 0
         self._conn_closed_table = {}  # mapping of req id -> conn closed
+        self._print_grpc_payload = print_grpc_payload
 
     def run(self):
         """
@@ -62,8 +66,10 @@ class SyncRPCClient(threading.Thread):
         while True:
             try:
                 start_time = time.time()
-                chan = ServiceRegistry.get_rpc_channel('dispatcher',
-                                                       ServiceRegistry.CLOUD)
+                chan = ServiceRegistry.get_rpc_channel(
+                    'dispatcher',
+                    ServiceRegistry.CLOUD,
+                )
                 client = SyncRPCServiceStub(chan)
                 self._set_connect_time()
                 self.process_streams(client)
@@ -71,12 +77,15 @@ class SyncRPCClient(threading.Thread):
                 if is_grpc_error_retryable(err):
                     logging.error(
                         "[SyncRPC] Transient gRPC error, retrying: %s",
-                        err.details())
+                        err.details(),
+                    )
                     self._retry_connect_sleep()
                     continue
                 else:
-                    logging.error("[SyncRPC] gRPC error: %s, reconnecting to "
-                                  "cloud.", err.details())
+                    logging.error(
+                        "[SyncRPC] gRPC error: %s, reconnecting to "
+                        "cloud.", err.details(),
+                    )
                     self._cleanup_and_reconnect()
             except Exception as exp:  # pylint: disable=broad-except
                 conn_time = time.time() - start_time
@@ -97,7 +106,8 @@ class SyncRPCClient(threading.Thread):
         # call to bidirectional streaming grpc takes in an iterator,
         # and returns an iterator
         sync_rpc_requests = client.EstablishSyncRPCStream(
-            self.send_sync_rpc_response())
+            self.send_sync_rpc_response(),
+        )
         magmad_events.established_sync_rpc_stream()
         # forward incoming requests from cloud to control_proxy
         self.forward_requests(sync_rpc_requests)
@@ -111,8 +121,10 @@ class SyncRPCClient(threading.Thread):
         """
         while True:
             try:
-                resp = self._response_queue.get(block=True,
-                                                timeout=self._response_timeout)
+                resp = self._response_queue.get(
+                    block=True,
+                    timeout=self._response_timeout,
+                )
                 yield resp
             except queue.Empty:
                 # response_queue is empty, send heartbeat
@@ -122,8 +134,10 @@ class SyncRPCClient(threading.Thread):
                 logging.debug("[SyncRPC] Sending heartbeat")
                 yield SyncRPCResponse(heartBeat=True)
 
-    def forward_requests(self,
-                         sync_rpc_requests: List[SyncRPCRequest]) -> None:
+    def forward_requests(
+        self,
+        sync_rpc_requests: List[SyncRPCRequest],
+    ) -> None:
         """
         Send requests in the sync_rpc_requests iterator.
         Args:
@@ -141,10 +155,12 @@ class SyncRPCClient(threading.Thread):
             except grpc.RpcError as err:
                 logging.error(
                     "[SyncRPC] Failing to forward request, err: %s",
-                    err.details())
+                    err.details(),
+                )
                 raise err
 
     def forward_request(self, request: SyncRPCRequest) -> None:
+        self._print_grpc(request)
         if request.heartBeat:
             logging.info("[SyncRPC] Got heartBeat from cloud")
             return
@@ -156,11 +172,14 @@ class SyncRPCClient(threading.Thread):
 
         logging.debug("[SyncRPC] Got a request")
         asyncio.run_coroutine_threadsafe(
-            self._proxy_client.send(request.reqBody,
-                                    request.reqId,
-                                    self._response_queue,
-                                    self._conn_closed_table),
-            self._loop)
+            self._proxy_client.send(
+                request.reqBody,
+                request.reqId,
+                self._response_queue,
+                self._conn_closed_table,
+            ),
+            self._loop,
+        )
 
     def _retry_connect_sleep(self) -> None:
         """
@@ -170,8 +189,10 @@ class SyncRPCClient(threading.Thread):
         RETRY_MAX_DELAY_SECS
         """
         sleep_time = self._current_delay + (random.randint(0, 1000) / 1000)
-        self._current_delay = min(2 * self._current_delay,
-                                  self.RETRY_MAX_DELAY_SECS)
+        self._current_delay = min(
+            2 * self._current_delay,
+            self.RETRY_MAX_DELAY_SECS,
+        )
         self._current_delay = max(self._current_delay, 1)
         time.sleep(sleep_time)
 
@@ -191,3 +212,22 @@ class SyncRPCClient(threading.Thread):
         self._proxy_client.close_all_connections()
         self._retry_connect_sleep()
         magmad_events.disconnected_sync_rpc_stream()
+
+    def _print_grpc(self, message):
+        if self._print_grpc_payload:
+            try:
+                log_msg = "{} {}".format(
+                    message.DESCRIPTOR.full_name,
+                    MessageToJson(message),
+                )
+                # add indentation
+                padding = 2 * ' '
+                log_msg = ''.join(
+                    "{}{}".format(padding, line)
+                    for line in log_msg.splitlines(True)
+                )
+
+                log_msg = "GRPC message:\n{}".format(log_msg)
+                logging.info(log_msg)
+            except Exception as e:  # pylint: disable=broad-except
+                logging.debug("Exception while trying to log GRPC: %s", e)

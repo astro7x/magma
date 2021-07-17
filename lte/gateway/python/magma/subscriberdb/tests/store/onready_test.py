@@ -14,13 +14,13 @@ limitations under the License.
 # pylint: disable=protected-access
 
 import asyncio
+import tempfile
 import unittest
 
 from lte.protos.subscriberdb_pb2 import SubscriberData
+from magma.subscriberdb.sid import SIDUtils
 from magma.subscriberdb.store.cached_store import CachedStore
 from magma.subscriberdb.store.sqlite import SqliteStore
-
-from magma.subscriberdb.sid import SIDUtils
 
 
 class OnReadyMixinTests(unittest.TestCase):
@@ -31,8 +31,12 @@ class OnReadyMixinTests(unittest.TestCase):
     def setUp(self):
         cache_size = 3
         self.loop = asyncio.new_event_loop()
-        sqlite = SqliteStore("file::memory:", loop=self.loop)
+        self._tmpfile = tempfile.TemporaryDirectory()
+        sqlite = SqliteStore(self._tmpfile.name + '/', loop=self.loop)
         self._store = CachedStore(sqlite, cache_size, self.loop)
+
+    def tearDown(self):
+        self._tmpfile.cleanup()
 
     def _add_subscriber(self, sid):
         sub = SubscriberData(sid=SIDUtils.to_pb(sid))
@@ -44,7 +48,9 @@ class OnReadyMixinTests(unittest.TestCase):
         Test if subscriber addition triggers ready
         """
         self.assertEqual(self._store._on_ready.event.is_set(), False)
-        self.assertEqual(self._store._persistent_store._on_ready.event.is_set(), False)
+        self.assertEqual(
+            self._store._persistent_store._on_ready.event.is_set(), False,
+        )
         self._add_subscriber('IMSI11111')
 
         async def defer():
@@ -52,15 +58,18 @@ class OnReadyMixinTests(unittest.TestCase):
         self.loop.run_until_complete(defer())
 
         self.assertEqual(self._store._on_ready.event.is_set(), True)
-        self.assertEqual(self._store._persistent_store._on_ready.event.is_set(), True)
-
+        self.assertEqual(
+            self._store._persistent_store._on_ready.event.is_set(), True,
+        )
 
     def test_resync(self):
         """
         Test if resync triggers ready
         """
         self.assertEqual(self._store._on_ready.event.is_set(), False)
-        self.assertEqual(self._store._persistent_store._on_ready.event.is_set(), False)
+        self.assertEqual(
+            self._store._persistent_store._on_ready.event.is_set(), False,
+        )
         self._store.resync([])
 
         async def defer():
@@ -68,4 +77,6 @@ class OnReadyMixinTests(unittest.TestCase):
         self.loop.run_until_complete(defer())
 
         self.assertEqual(self._store._on_ready.event.is_set(), True)
-        self.assertEqual(self._store._persistent_store._on_ready.event.is_set(), True)
+        self.assertEqual(
+            self._store._persistent_store._on_ready.event.is_set(), True,
+        )

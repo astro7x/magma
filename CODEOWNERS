@@ -1,41 +1,66 @@
-.circleci/ @tmdzk
-circleci/ @tmdzk @mattymo @119Vik
+# approvers-ci
+.circleci/ @magma/approvers-ci
+circleci/ @magma/approvers-ci
+ci-scripts/ @magma/approvers-ci
+.github/workflows/ @magma/approvers-ci
+third_party/build/ @magma/approvers-ci
+orc8r/tools/packer/ @magma/approvers-ci
+orc8r/cloud/deploy/bare-metal/ @magma/approvers-ci
+orc8r/cloud/deploy/bare-metal-ansible/ @magma/approvers-ci
+lte/gateway/docker @magma/approvers-ci
+lte/gateway/release @magma/approvers-ci
+lte/gateway/Vagrantfile @magma/approvers-ci
+cwf/gateway/Vagrantfile @magma/approvers-ci
 
-ci-scripts/ @rdefosse @tmdzk @mattymo @119Vik
+# approvers-orc8r
+*/cloud/ @magma/approvers-orc8r
+.golangci.yml @magma/approvers-orc8r
+orc8r/ @magma/approvers-orc8r
 
-*/cloud/ @mpgermano @hcgatewood
-.golangci.yml @mpgermano @hcgatewood
+# approvers-nms
+nms/ @magma/approvers-nms
 
-orc8r/ @mpgermano @hcgatewood @emakeev
-orc8r/tools/packer/ @tmdzk @mattymo @119Vik
-orc8r/cloud/deploy/bare-metal/ @tmdzk @mattymo @119Vik
+# approvers-feg
+feg/ @magma/approvers-feg
 
-feg/ @themarwhal @mpgermano @uri200 @emakeev
-cwf/ @themarwhal @mpgermano @uri200 @emakeev
-cwf/gateway/Vagrantfile @mattymo @119Vik @tmdzk
+# approvers-cwf
+cwf/ @magma/approvers-cwf
 
+# approvers-openwrt
+openwrt/ @magma/approvers-openwrt
 
-openwrt/ @emakeev @uri200
+# approvers-agw / approvers-agw-python / approvers-agw-c
+lte/gateway @magma/approvers-agw
+lte/protos @magma/approvers-agw
+lte/gateway/python @magma/approvers-agw-python
+lte/gateway/c @magma/approvers-agw-c
+orc8r/gateway/c/ @magma/approvers-agw-c
 
-# More specific mappings for lte/gateway will override this top-level one
-lte/gateway @ardzoht @pshelar
-lte/gateway/c/session_manager @themarwhal @uri200
-lte/gateway/c/oai @ssanadhya @ulaskozat @lionelgo
-lte/gateway/c/sctpd @ssanadhya @ulaskozat
-lte/gateway/c/connection_tracker @koolzz
-lte/gateway/docker @rdefosse @tmdzk
-lte/gateway/release @kkahrs @tmdzk
-lte/gateway/python/magma/pipelined @koolzz @pshelar
-lte/gateway/python/integ_tests @ssanadhya @ulaskozat
-lte/gateway/Vagrantfile @mattymo @119Vik @tmdzk
+# approvers-agw-<subsection>
+lte/gateway/c/session_manager @magma/approvers-agw-sessiond
+lte/gateway/c/core/oai @magma/approvers-agw-mme
+lte/gateway/c/sctpd @magma/approvers-agw-mme
+lte/gateway/c/connection_tracker @koolzz @magma/approvers-agw-c
+lte/gateway/python/magma/pipelined @magma/approvers-agw-pipelined
+lte/gateway/python/integ_tests @magma/approvers-agw-integtests
 
-**/*.pb.go @magma/entire-org
-**/*_swaggergen.go @magma/entire-org
+# XWF Magma integrations
+xwf/ @magma/approvers-xwf
+feg/radius @magma/approvers-xwf @magma/approvers-cwf
 
-# xwf Magma integrations
-xwf/ @AyliD @aharonnovo @r-i-g
-feg/radius @AyliD @aharonnovo @r-i-g @themarwhal @mpgermano @uri200 @emakeev
+# approvers-showtech
+show-tech/ @magma/approvers-showtech
 
-nms/ @karthiksubraveti @andreilee @Scott8440
+docs/ @magma/approvers-docs
+docs/readmes/proposals @electronjoe
 
-CODEOWNERS @amarpad
+CODEOWNERS @amarpad @electronjoe @hcgatewood
+
+# Paths excluded from code ownership
+**/go.mod @ghost
+**/go.sum @ghost
+**/*.pb.go @ghost
+**/*_swaggergen.go @ghost
+orc8r/cloud/go/obsidian/swagger/v1/swagger.yml @ghost
+orc8r/cloud/go/obsidian/swagger/v1/client/ @ghost
+orc8r/cloud/go/obsidian/swagger/v1/models/ @ghost

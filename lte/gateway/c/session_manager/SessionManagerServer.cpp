@@ -10,11 +10,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "SessionManagerServer.h"
-#include "magma_logging.h"
+#include <grpc/impl/codegen/port_platform.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
 #include <chrono>
 #include <ctime>
-using grpc::ServerContext;
+#include <memory>
+
+#include "magma_logging.h"
+#include "SessionManagerServer.h"
+
 using grpc::Status;
 
 namespace magma {
@@ -45,6 +51,12 @@ void AsyncService::wait_for_requests() {
 void AsyncService::stop() {
   running_ = false;
   cq_->Shutdown();
+  // Pop all items in the queue until it is empty
+  // https://github.com/grpc/grpc/issues/8610
+  void* tag;
+  bool ok;
+  while (cq_->Next(&tag, &ok)) {
+  }
 }
 
 LocalSessionManagerAsyncService::LocalSessionManagerAsyncService(
@@ -70,6 +82,19 @@ AmfPduSessionSmContextAsyncService::AmfPduSessionSmContextAsyncService(
 void AmfPduSessionSmContextAsyncService::init_call_data() {
   new SetAmfSessionContextCallData(cq_.get(), *this, *handler_);
   MLOG(MINFO) << "Initializing new call data for SetAmfSessionContext";
+}
+
+/*Landing object invocation object call for 5G*/
+SetInterfaceForUserPlaneAsyncService::SetInterfaceForUserPlaneAsyncService(
+    std::unique_ptr<ServerCompletionQueue> cq,
+    std::unique_ptr<UpfMsgManageHandler> handler)
+    : AsyncService(std::move(cq)), handler_(std::move(handler)) {}
+
+void SetInterfaceForUserPlaneAsyncService::init_call_data() {
+  MLOG(MINFO) << "Initializing new call data for SetUpfNodeStateCallData";
+  new SetUPFNodeStateCallData(cq_.get(), *this, *handler_);
+  MLOG(MINFO) << "Initializing new call data for SendPagingRequest";
+  new SendPagingRequestCallData(cq_.get(), *this, *handler_);
 }
 
 SessionProxyResponderAsyncService::SessionProxyResponderAsyncService(

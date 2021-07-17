@@ -33,7 +33,6 @@ var (
 	configDir         = "/etc/magma/configs"
 	oldConfigDir      = "/etc/magma"
 	configOverrideDir = "/var/opt/magma/configs"
-	specDir           = "/etc/magma/configs/orc8r/swagger_specs"
 	cfgDirMu          sync.RWMutex
 )
 
@@ -85,6 +84,15 @@ func GetStructuredServiceConfig(moduleName string, serviceName string, out inter
 	main, legacy, overwrite := configDir, oldConfigDir, configOverrideDir
 	cfgDirMu.RUnlock()
 	return GetStructuredServiceConfigExt(moduleName, serviceName, main, legacy, overwrite, out)
+}
+
+// MustGetStructuredServiceConfig is the same as GetStructuredServiceConfig,
+// but it fails on errors.
+func MustGetStructuredServiceConfig(moduleName string, serviceName string, out interface{}) {
+	_, _, err := GetStructuredServiceConfig(moduleName, serviceName, &out)
+	if err != nil {
+		glog.Fatalf("Failed to read %s::%s configs: %v", moduleName, serviceName, err)
+	}
 }
 
 // GetStructuredServiceConfigExt is an extended version of GetStructuredServiceConfig, it allows to pass config
@@ -156,13 +164,6 @@ func SetConfigDirectories(main, legacy, overwrite string) {
 	cfgDirMu.Lock()
 	configDir, oldConfigDir, configOverrideDir = main, legacy, overwrite
 	cfgDirMu.Unlock()
-}
-
-// GetSpecPath returns the filepath on the production image
-// that contains the service's Swagger spec
-func GetSpecPath(service string) string {
-	specPath := filepath.Join(specDir, fmt.Sprintf("%s.swagger.v1.yml", service))
-	return specPath
 }
 
 func getServiceConfigImpl(moduleName, serviceName, configDir, oldConfigDir, configOverrideDir string) (*ConfigMap, error) {

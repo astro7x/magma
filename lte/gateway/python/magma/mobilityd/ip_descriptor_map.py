@@ -32,11 +32,15 @@ during it's life cycle in the IP allocator:
         to age IPs for a certain period of time before freeing.
 """
 
-from __future__ import absolute_import, division, print_function, \
-    unicode_literals
+from __future__ import (
+    absolute_import,
+    division,
+    print_function,
+    unicode_literals,
+)
 
 from ipaddress import ip_address, ip_network
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, MutableMapping, Optional, Set
 
 from magma.mobilityd.ip_descriptor import IPDesc, IPState
 
@@ -45,7 +49,7 @@ DEFAULT_IP_RECYCLE_INTERVAL = 15
 
 class IpDescriptorMap:
 
-    def __init__(self, ip_states: Dict[str, IPDesc]):
+    def __init__(self, ip_states: MutableMapping[IPState, Dict[str, IPDesc]]):
         """
 
         Args:
@@ -53,8 +57,10 @@ class IpDescriptorMap:
         """
         self.ip_states = ip_states
 
-    def add_ip_to_state(self, ip: ip_address, ip_desc: IPDesc,
-                        state: IPState):
+    def add_ip_to_state(
+        self, ip: ip_address, ip_desc: IPDesc,
+        state: IPState,
+    ):
         """ Add ip=>ip_desc pairs to a internal dict """
         assert ip_desc.state == state, \
             "ip_desc.state %s does not match with state %s" \

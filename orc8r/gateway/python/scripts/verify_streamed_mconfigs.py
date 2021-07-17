@@ -11,9 +11,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
-import sys
-
 import os
+import sys
 
 legacy_mconfig_file = '/var/opt/magma/configs/gateway.mconfig'
 new_mconfig_file = '/var/opt/magma/configs/gateway.streamed.mconfig'
@@ -43,8 +42,11 @@ def main():
             key_difference = gw_configs_json_deser['configsByKey'].keys() ^\
                              streamed_gw_configs['configsByKey'].keys()
             if key_difference:
-                print('Symmetric difference of mconfig keys: {}'.format(
-                    key_difference))
+                print(
+                    'Symmetric difference of mconfig keys: {}'.format(
+                    key_difference,
+                    ),
+                )
 
             for k in gw_configs_json_deser['configsByKey'].keys():
                 old_v = gw_configs_json_deser['configsByKey'][k]

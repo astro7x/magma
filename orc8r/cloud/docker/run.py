@@ -15,11 +15,12 @@ limitations under the License.
 
 import argparse
 import fileinput
+import pathlib
 import subprocess
 import sys
-
 from typing import List
 
+HOST_BUILD_CTX = '/tmp/magma_orc8r_build'
 DO_NOT_COMMIT = '# DO NOT COMMIT THIS CHANGE'
 
 
@@ -49,7 +50,13 @@ def main() -> None:
     if args.print:
         return
 
+    # Ensure build context exists, otherwise docker-compose throws an error
+    pathlib.Path(HOST_BUILD_CTX).mkdir(parents=True, exist_ok=True)
+
     cmd = ['docker-compose', 'up', '-d']
+    if args.down:
+        cmd = ['docker-compose', 'down']
+
     print("Running '%s'..." % ' '.join(cmd))
     try:
         subprocess.run(cmd, check=True)
@@ -111,6 +118,13 @@ def _parse_args() -> argparse.Namespace:
         '--thanos',
         action='store_true',
         help='Include docker-compose.thanos.yml',
+    )
+
+    # Other actions
+    parser.add_argument(
+        '--down', '-d',
+        action='store_true',
+        help='Stop running containers',
     )
 
     args = parser.parse_args()

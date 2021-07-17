@@ -11,14 +11,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import tempfile
 import unittest
 
 from lte.protos.subscriberdb_pb2 import SubscriberData
-from magma.subscriberdb.store.base import DuplicateSubscriberError, \
-    SubscriberNotFoundError
-from magma.subscriberdb.store.sqlite import SqliteStore
-
 from magma.subscriberdb.sid import SIDUtils
+from magma.subscriberdb.store.base import (
+    DuplicateSubscriberError,
+    SubscriberNotFoundError,
+)
+from magma.subscriberdb.store.sqlite import SqliteStore
 
 
 class StoreTests(unittest.TestCase):
@@ -27,8 +29,12 @@ class StoreTests(unittest.TestCase):
     """
 
     def setUp(self):
-        # Create an in-memory sqlite3 database for testing
-        self._store = SqliteStore("file::memory:")
+        # Create sqlite3 database for testing
+        self._tmpfile = tempfile.TemporaryDirectory()
+        self._store = SqliteStore(self._tmpfile.name + '/')
+
+    def tearDown(self):
+        self._tmpfile.cleanup()
 
     def _add_subscriber(self, sid):
         sub = SubscriberData(sid=SIDUtils.to_pb(sid))
@@ -94,13 +100,17 @@ class StoreTests(unittest.TestCase):
 
         sub1.lte.auth_key = b'1234'
         self._store.update_subscriber(sub1)
-        self.assertEqual(self._store.get_subscriber_data(sid1).lte.auth_key,
-                         b'1234')
+        self.assertEqual(
+            self._store.get_subscriber_data(sid1).lte.auth_key,
+            b'1234',
+        )
 
         with self._store.edit_subscriber(sid1) as subs:
             subs.lte.auth_key = b'5678'
-        self.assertEqual(self._store.get_subscriber_data(sid1).lte.auth_key,
-                         b'5678')
+        self.assertEqual(
+            self._store.get_subscriber_data(sid1).lte.auth_key,
+            b'5678',
+        )
 
         with self.assertRaises(SubscriberNotFoundError):
             sub1.sid.id = '30000'
@@ -108,6 +118,16 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(SubscriberNotFoundError):
             with self._store.edit_subscriber('IMSI3000') as subs:
                 pass
+
+    def test_digest(self):
+        """
+        Test if digest gets & updates work as expected
+        """
+        self.assertEqual(self._store.get_current_digest(), "")
+        self._store.update_digest("digest_apple")
+        self.assertEqual(self._store.get_current_digest(), "digest_apple")
+        self._store.update_digest("digest_banana")
+        self.assertEqual(self._store.get_current_digest(), "digest_banana")
 
 
 if __name__ == "__main__":

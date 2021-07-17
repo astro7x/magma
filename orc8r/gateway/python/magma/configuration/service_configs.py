@@ -12,12 +12,11 @@ limitations under the License.
 """
 
 import logging
-from typing import Any, Dict, \
-    Optional  # noqa: lint doesn't handle inline typehints
-
 import os
-import yaml
+from typing import Optional  # noqa: lint doesn't handle inline typehints
+from typing import Any, Dict
 
+import yaml
 from magma.configuration.exceptions import LoadConfigError
 
 # Location of configs (both service config and mconfig)
@@ -121,7 +120,7 @@ def get_service_config_value(service: str, param: str, default: Any) -> Any:
     else:
         logging.error(
             'Error retrieving config for %s, key not found: %s',
-            service, param
+            service, param,
         )
         return default
 

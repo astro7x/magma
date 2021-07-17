@@ -127,6 +127,7 @@
   become: yes
   apt:
     name: "{{ packages }}"
+    dpkg_options: 'force-confold,force-confdef,force-overwrite'
   vars:
     packages:
       - magma
@@ -154,6 +155,12 @@
 
 - name: Bring up mtr0
   shell: ifup mtr0
+  become: yes
+  tags:
+    - skipfirstinstall
+
+- name: Bring up li_port
+  shell: ifup li_port
   become: yes
   tags:
     - skipfirstinstall

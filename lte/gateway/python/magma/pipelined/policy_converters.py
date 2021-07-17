@@ -12,13 +12,15 @@ limitations under the License.
 """
 import ipaddress
 
-from lte.protos.policydb_pb2 import FlowMatch
 from lte.protos.mobilityd_pb2 import IPAddress
+from lte.protos.policydb_pb2 import FlowMatch
 from magma.pipelined.openflow.magma_match import MagmaMatch
-from magma.pipelined.openflow.registers import Direction, load_direction, \
-    DPI_REG
+from magma.pipelined.openflow.registers import (
+    DPI_REG,
+    Direction,
+    load_direction,
+)
 from ryu.lib.packet import ether_types
-
 
 MATCH_ATTRIBUTES = ['metadata', 'reg0', 'reg1', 'reg2', 'reg3', 'reg4', 'reg5',
                     'reg6', 'reg8', 'reg9', 'reg10',
@@ -240,6 +242,11 @@ def get_direction_for_match(flow_match):
 def convert_ipv4_str_to_ip_proto(ipv4_str):
     return IPAddress(version=IPAddress.IPV4,
                      address=ipv4_str.encode('utf-8'))
+
+
+def convert_ipv6_str_to_ip_proto(ipv6_str):
+    return IPAddress(version=IPAddress.IPV6,
+                     address=ipv6_str.encode('utf-8'))
 
 
 def convert_ipv6_bytes_to_ip_proto(ipv6_bytes):

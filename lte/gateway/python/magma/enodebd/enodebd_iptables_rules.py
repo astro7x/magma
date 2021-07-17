@@ -15,17 +15,18 @@ limitations under the License.
 
 
 import asyncio
-from magma.enodebd.logger import EnodebdLogger as logger
+import re
 import shlex
 import subprocess
-import re
 from typing import List
+
 from magma.common.misc_utils import (
     IpPreference,
+    get_if_ip_with_netmask,
     get_ip_from_if,
-    get_if_ip_with_netmask
 )
 from magma.configuration.service_configs import load_service_config
+from magma.enodebd.logger import EnodebdLogger as logger
 
 IPTABLES_RULE_FMT = """sudo iptables -t nat
     -{add} PREROUTING
@@ -59,9 +60,11 @@ def _get_prerouting_rules(output: str) -> List[str]:
     return prerouting_rules
 
 
-async def check_and_apply_iptables_rules(port: str,
-                                         enodebd_public_ip: str,
-                                         enodebd_ip: str) -> None:
+async def check_and_apply_iptables_rules(
+    port: str,
+    enodebd_public_ip: str,
+    enodebd_ip: str,
+) -> None:
     command = 'sudo iptables -t nat -L'
     output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, check=True)
     command_output = output.stdout.decode('utf-8').strip()
@@ -74,17 +77,19 @@ async def check_and_apply_iptables_rules(port: str,
                 enodebd_public_ip,
                 enodebd_ip,
                 add=True,
-            )
+            ),
         )
     else:
         # Checks each rule in PREROUTING Chain
         check_rules(prerouting_rules, port, enodebd_public_ip, enodebd_ip)
 
 
-def check_rules(prerouting_rules: List[str],
-                port: str,
-                enodebd_public_ip: str,
-                private_ip: str) -> None:
+def check_rules(
+    prerouting_rules: List[str],
+    port: str,
+    enodebd_public_ip: str,
+    private_ip: str,
+) -> None:
     unexpected_rules = []
     pattern = r'DNAT\s+tcp\s+--\s+anywhere\s+{pub_ip}\s+tcp\s+dpt:{dport} to:{ip}'.format(
                 pub_ip=enodebd_public_ip,
@@ -108,8 +113,10 @@ async def run(cmd):
     await proc.communicate()
     if proc.returncode != 0:
         # This can happen because the NAT prerouting rule didn't exist
-        logger.error('Possible error running async subprocess: %s exited with '
-                     'return code [%d].', cmd, proc.returncode)
+        logger.error(
+            'Possible error running async subprocess: %s exited with '
+            'return code [%d].', cmd, proc.returncode,
+        )
     return proc.returncode
 
 
@@ -138,7 +145,7 @@ async def set_enodebd_iptables_rule():
         logger.warning(
             'The IP address of the %s interface is %s. The '
             'expected IP addresses are %s',
-            interface, enodebd_ip, str(EXPECTED_IP4)
+            interface, enodebd_ip, str(EXPECTED_IP4),
         )
     await check_and_apply_iptables_rules(
         port,

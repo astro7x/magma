@@ -13,6 +13,7 @@ limitations under the License.
 
 import os
 import unittest
+
 from nose.plugins.skip import SkipTest
 
 
@@ -64,9 +65,11 @@ class TestTopologyBuilder(unittest.TestCase):
             ip_address = self.TEST_IP_PREFIX + str(i + 2)
             iface_name = self.TEST_INT_PREFIX + str(i)
             self._topology_builder.bind(iface_name, bridge)
-            self._topology_builder.create_interface(iface_name,
-                                                    ip_address,
-                                                    self.TEST_NETMASK)
+            self._topology_builder.create_interface(
+                iface_name,
+                ip_address,
+                self.TEST_NETMASK,
+            )
 
         self.assertFalse(self._topology_builder.invalid_devices())
 
@@ -74,8 +77,10 @@ class TestTopologyBuilder(unittest.TestCase):
         """
         Simple validator for port methods.
         """
-        from magma.pkt_tester.topology_builder import TopologyBuilder
-        from magma.pkt_tester.topology_builder import UseAfterFreeException
+        from magma.pkt_tester.topology_builder import (
+            TopologyBuilder,
+            UseAfterFreeException,
+        )
         self._topology_builder = TopologyBuilder()
         bridge = self._topology_builder.create_bridge(self.TEST_BRIDGE_NAME)
 
@@ -83,8 +88,10 @@ class TestTopologyBuilder(unittest.TestCase):
         iface_name = self.TEST_INT_PREFIX + "0"
 
         port = self._topology_builder.bind(iface_name, bridge)
-        self._topology_builder.create_interface(iface_name, ip_address,
-                                                self.TEST_NETMASK)
+        self._topology_builder.create_interface(
+            iface_name, ip_address,
+            self.TEST_NETMASK,
+        )
 
         self.assertEqual(port.bridge_name, self.TEST_BRIDGE_NAME)
         self.assertEqual(port.iface_name, iface_name)
@@ -102,16 +109,20 @@ class TestTopologyBuilder(unittest.TestCase):
         """
         Simple validator for iface methods
         """
-        from magma.pkt_tester.topology_builder import TopologyBuilder
-        from magma.pkt_tester.topology_builder import UseAfterFreeException
+        from magma.pkt_tester.topology_builder import (
+            TopologyBuilder,
+            UseAfterFreeException,
+        )
         self._topology_builder = TopologyBuilder()
         ip_address = self.TEST_IP_PREFIX + "2"
         iface_name = self.TEST_INT_PREFIX + "0"
         bridge = self._topology_builder.create_bridge(self.TEST_BRIDGE_NAME)
         self._topology_builder.bind(iface_name, bridge)
-        iface = self._topology_builder.create_interface(iface_name,
-                                                        ip_address,
-                                                        self.TEST_NETMASK)
+        iface = self._topology_builder.create_interface(
+            iface_name,
+            ip_address,
+            self.TEST_NETMASK,
+        )
         self.assertEqual(iface.name, iface_name)
         self.assertEqual(iface.ip_address, ip_address)
         self.assertEqual(iface.netmask, self.TEST_NETMASK)
@@ -125,16 +136,22 @@ class TestTopologyBuilder(unittest.TestCase):
         """
         Simple validator for bridge methods
         """
-        from magma.pkt_tester.topology_builder import TopologyBuilder
-        from magma.pkt_tester.topology_builder import UseAfterFreeException
+        from magma.pkt_tester.topology_builder import (
+            TopologyBuilder,
+            UseAfterFreeException,
+        )
         self._topology_builder = TopologyBuilder()
         bridge = self._topology_builder.create_bridge(self.TEST_BRIDGE_NAME)
 
         self.assertEqual(bridge.name, self.TEST_BRIDGE_NAME)
         bridge.destroy()
         iface_name = self.TEST_INT_PREFIX + "0"
-        self.assertRaises(UseAfterFreeException, bridge.add_virtual_port,
-                          iface_name, "internal")
-        self.assertRaises(UseAfterFreeException, bridge.add_physical_port,
-                          "eth0")
+        self.assertRaises(
+            UseAfterFreeException, bridge.add_virtual_port,
+            iface_name, "internal",
+        )
+        self.assertRaises(
+            UseAfterFreeException, bridge.add_physical_port,
+            "eth0",
+        )
         self.assertRaises(UseAfterFreeException, bridge.sanity_check)

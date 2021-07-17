@@ -12,14 +12,15 @@ limitations under the License.
 """
 
 import logging
-
-import grpc
 import os
 
+import grpc
 from magma.configuration.exceptions import LoadConfigError
 from magma.configuration.service_configs import load_service_config
 
 GRPC_KEEPALIVE_MS = 30 * 1000
+
+
 class ServiceRegistry:
     """
     ServiceRegistry provides the framework to discover services.
@@ -92,7 +93,10 @@ class ServiceRegistry:
             grpc channel
         """
         proxy_config = ServiceRegistry.get_proxy_config()
-        (ip, port) = (proxy_config['bootstrap_address'], proxy_config['bootstrap_port'])
+        (ip, port) = (
+            proxy_config['bootstrap_address'],
+            proxy_config['bootstrap_port'],
+        )
         authority = proxy_config['bootstrap_address']
 
         try:
@@ -104,8 +108,10 @@ class ServiceRegistry:
         return create_grpc_channel(ip, port, authority, ssl_creds)
 
     @staticmethod
-    def get_rpc_channel(service, destination, proxy_cloud_connections=True,
-                        grpc_options=None):
+    def get_rpc_channel(
+        service, destination, proxy_cloud_connections=True,
+        grpc_options=None,
+    ):
         """
         Returns a RPC channel to the service. The connection params
         are obtained from the service registry and used.
@@ -152,25 +158,33 @@ class ServiceRegistry:
         if destination == ServiceRegistry.LOCAL:
             # Connect to the local service directly
             (ip, port) = ServiceRegistry.get_service_address(service)
-            channel = create_grpc_channel(ip, port, authority,
-                                          options=grpc_options)
+            channel = create_grpc_channel(
+                ip, port, authority,
+                options=grpc_options,
+            )
         elif should_use_proxy:
             # Connect to the cloud via local control proxy
             try:
-                (ip, unused_port) = ServiceRegistry.get_service_address("control_proxy")
+                (ip, unused_port) = ServiceRegistry.get_service_address(
+                    "control_proxy",
+                )
                 port = proxy_config['local_port']
             except ValueError as err:
                 logging.error(err)
                 (ip, port) = ('127.0.0.1', proxy_config['local_port'])
-            channel = create_grpc_channel(ip, port, authority,
-                                          options=grpc_options)
+            channel = create_grpc_channel(
+                ip, port, authority,
+                options=grpc_options,
+            )
         else:
             # Connect to the cloud directly
             ip = proxy_config['cloud_address']
             port = proxy_config['cloud_port']
             ssl_creds = get_ssl_creds()
-            channel = create_grpc_channel(ip, port, authority, ssl_creds,
-                                          options=grpc_options)
+            channel = create_grpc_channel(
+                ip, port, authority, ssl_creds,
+                options=grpc_options,
+            )
         if should_reuse_channel:
             ServiceRegistry._CHANNELS_CACHE[authority] = channel
         return channel
@@ -201,11 +215,12 @@ class ServiceRegistry:
         if not ServiceRegistry._PROXY_CONFIG:
             try:
                 ServiceRegistry._PROXY_CONFIG = load_service_config(
-                    'control_proxy')
+                    'control_proxy',
+                )
             except LoadConfigError as err:
                 logging.error(err)
                 ServiceRegistry._PROXY_CONFIG = {
-                    'proxy_cloud_connections': True
+                    'proxy_cloud_connections': True,
                 }
         return ServiceRegistry._PROXY_CONFIG
 
@@ -218,11 +233,11 @@ def set_grpc_cipher_suites():
         ciphers needed by default for gRPC.
     """
     os.environ["GRPC_SSL_CIPHER_SUITES"] = "ECDHE-ECDSA-AES256-GCM-SHA384:"\
-            "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:"\
-            "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:"\
-            "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:"\
-            "ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:"\
-            "ECDHE-RSA-AES128-SHA256"
+        "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:"\
+        "ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:"\
+        "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:"\
+        "ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:"\
+        "ECDHE-RSA-AES128-SHA256"
 
 
 def get_ssl_creds():
@@ -243,9 +258,10 @@ def get_ssl_creds():
         cert = open(proxy_config['gateway_cert']).read().encode()
         key = open(proxy_config['gateway_key']).read().encode()
         ssl_creds = grpc.ssl_channel_credentials(
-                root_certificates=rootca,
-                certificate_chain=cert,
-                private_key=key)
+            root_certificates=rootca,
+            certificate_chain=cert,
+            private_key=key,
+        )
     except FileNotFoundError as exp:
         raise ValueError("SSL cert not found: %s" % exp)
     return ssl_creds
@@ -272,9 +288,11 @@ def create_grpc_channel(ip, port, authority, ssl_creds=None, options=None):
         channel = grpc.secure_channel(
             target='%s:%s' % (ip, port),
             credentials=ssl_creds,
-            options=grpc_options)
+            options=grpc_options,
+        )
     else:
         channel = grpc.insecure_channel(
             target='%s:%s' % (ip, port),
-            options=grpc_options)
+            options=grpc_options,
+        )
     return channel

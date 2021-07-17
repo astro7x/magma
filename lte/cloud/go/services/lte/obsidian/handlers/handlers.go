@@ -114,6 +114,7 @@ func GetHandlers() []obsidian.Handler {
 		{Path: ListGatewayPoolsPath, Methods: obsidian.GET, HandlerFunc: listGatewayPoolsHandler},
 		{Path: ListGatewayPoolsPath, Methods: obsidian.POST, HandlerFunc: createGatewayPoolHandler},
 		{Path: ManageGatewayPoolsPath, Methods: obsidian.GET, HandlerFunc: getGatewayPoolHandler},
+		{Path: ManageGatewayPoolsPath, Methods: obsidian.PUT, HandlerFunc: updateGatewayPoolHandler},
 		{Path: ManageGatewayPoolsPath, Methods: obsidian.DELETE, HandlerFunc: deleteGatewayPoolHandler},
 
 		{Path: ManageNetworkApnPath, Methods: obsidian.GET, HandlerFunc: listApns},
@@ -174,7 +175,7 @@ func getGateway(c echo.Context) error {
 		return nerr
 	}
 
-	magmadModel, nerr := handlers.LoadMagmadGateway(nid, gid)
+	magmadModel, nerr := handlers.LoadMagmadGateway(c.Request().Context(), nid, gid)
 	if nerr != nil {
 		return nerr
 	}
@@ -240,6 +241,7 @@ func deleteGateway(c echo.Context) error {
 	var deletes storage.TKs
 	deletes = append(deletes, storage.TypeAndKey{Type: lte.CellularGatewayEntityType, Key: gid})
 
+	reqCtx := c.Request().Context()
 	gw, err := configurator.LoadEntity(
 		nid, lte.CellularGatewayEntityType, gid,
 		configurator.EntityLoadCriteria{LoadAssocsFromThis: true},
@@ -250,7 +252,7 @@ func deleteGateway(c echo.Context) error {
 	}
 	deletes = append(deletes, gw.Associations.Filter(lte.APNResourceEntityType)...)
 
-	err = handlers.DeleteMagmadGateway(nid, gid, deletes)
+	err = handlers.DeleteMagmadGateway(reqCtx, nid, gid, deletes)
 	if err != nil {
 		return makeErr(err)
 	}
@@ -299,7 +301,7 @@ func listEnodebs(c echo.Context) error {
 		return nerr
 	}
 
-	ents, err := configurator.LoadAllEntitiesOfType(
+	ents, _, err := configurator.LoadAllEntitiesOfType(
 		nid, lte.CellularEnodebEntityType,
 		configurator.EntityLoadCriteria{LoadMetadata: true, LoadConfig: true, LoadAssocsToThis: true},
 		serdes.Entity,
@@ -418,7 +420,9 @@ func getEnodebState(c echo.Context) error {
 	if nerr != nil {
 		return nerr
 	}
-	st, err := state.GetState(nid, lte.EnodebStateType, eid, serdes.State)
+
+	reqCtx := c.Request().Context()
+	st, err := state.GetState(reqCtx, nid, lte.EnodebStateType, eid, serdes.State)
 	if err == merrors.ErrNotFound {
 		return obsidian.HttpError(err, http.StatusNotFound)
 	} else if err != nil {
@@ -491,7 +495,7 @@ func listApns(c echo.Context) error {
 		return nerr
 	}
 
-	ents, err := configurator.LoadAllEntitiesOfType(
+	ents, _, err := configurator.LoadAllEntitiesOfType(
 		networkID, lte.APNEntityType,
 		configurator.EntityLoadCriteria{LoadConfig: true},
 		serdes.Entity,
@@ -753,7 +757,7 @@ func listGatewayPoolsHandler(c echo.Context) error {
 	if nerr != nil {
 		return nerr
 	}
-	gatewayPoolEnts, err := configurator.LoadAllEntitiesOfType(nid, lte.CellularGatewayPoolEntityType, configurator.FullEntityLoadCriteria(), serdes.Entity)
+	gatewayPoolEnts, _, err := configurator.LoadAllEntitiesOfType(nid, lte.CellularGatewayPoolEntityType, configurator.FullEntityLoadCriteria(), serdes.Entity)
 	if err != nil {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
@@ -810,6 +814,37 @@ func getGatewayPoolHandler(c echo.Context) error {
 		return obsidian.HttpError(err, http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, gatewayPool)
+}
+
+func updateGatewayPoolHandler(c echo.Context) error {
+	networkID, gatewayPoolID, nerr := getNetworkIDAndGatewayPoolID(c)
+	if nerr != nil {
+		return nerr
+	}
+	gatewayPool := &lte_models.MutableCellularGatewayPool{}
+	if err := c.Bind(gatewayPool); err != nil {
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+	if err := gatewayPool.ValidateModel(); err != nil {
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+	if string(gatewayPool.GatewayPoolID) != gatewayPoolID {
+		err := fmt.Errorf("gateway pool ID from parameters (%s) and payload (%s) must match", gatewayPoolID, gatewayPool.GatewayPoolID)
+		return obsidian.HttpError(err, http.StatusBadRequest)
+	}
+	// 404 if pool doesn't exist
+	exists, err := configurator.DoesEntityExist(networkID, lte.CellularGatewayPoolEntityType, gatewayPoolID)
+	if err != nil {
+		return obsidian.HttpError(errors.Wrap(err, "Error while checking if gateway pool exists"), http.StatusInternalServerError)
+	}
+	if !exists {
+		return echo.ErrNotFound
+	}
+	_, err = configurator.UpdateEntity(networkID, gatewayPool.ToEntityUpdateCriteria(), serdes.Entity)
+	if err != nil {
+		return obsidian.HttpError(err, http.StatusInternalServerError)
+	}
+	return c.JSON(http.StatusCreated, gatewayPool.GatewayPoolID)
 }
 
 func deleteGatewayPoolHandler(c echo.Context) error {

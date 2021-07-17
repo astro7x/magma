@@ -15,6 +15,7 @@
  */
 import type {DataRows} from '../../components/DataGrid';
 import type {Dataset} from '../../components/CustomMetrics';
+import type {EnqueueSnackbarOptions} from 'notistack';
 import type {network_id, subscriber_id} from '@fbcnms/magma-api';
 
 import Card from '@material-ui/core/Card';
@@ -60,7 +61,10 @@ type DatasetFetchProps = {
   subscriberId: subscriber_id,
   start: moment,
   end: moment,
-  enqueueSnackbar: (msg: string, cfg: {}) => ?(string | number),
+  enqueueSnackbar: (
+    msg: string,
+    cfg: EnqueueSnackbarOptions,
+  ) => ?(string | number),
 };
 
 async function getDatasets(props: DatasetFetchProps) {
@@ -72,12 +76,12 @@ async function getDatasets(props: DatasetFetchProps) {
 
   const queries = [
     {
-      q: `sum(increase(ue_reported_usage{IMSI="${subscriberId}",direction="down"}[${step}]))`,
+      q: `sum(sum_over_time(ue_reported_usage{IMSI="${subscriberId}",direction="down"}[${step}]))`,
       color: colors.secondary.dodgerBlue,
       label: 'download',
     },
     {
-      q: `sum(increase(ue_reported_usage{IMSI="${subscriberId}",direction="up"}[${step}]))`,
+      q: `sum(sum_over_time(ue_reported_usage{IMSI="${subscriberId}",direction="up"}[${step}]))`,
       color: colors.data.flamePea,
       label: 'upload',
     },

@@ -15,32 +15,34 @@ import warnings
 from concurrent.futures import Future
 
 from lte.protos.mconfig.mconfigs_pb2 import PipelineD
+from magma.pipelined.app.inout import EGRESS, INGRESS
 from magma.pipelined.app.ue_mac import UEMacAddressController
-from magma.pipelined.app.inout import INGRESS, EGRESS
-from magma.pipelined.app.ue_mac import UEMacAddressController
-from magma.pipelined.tests.app.packet_builder import EtherPacketBuilder, \
-    UDPPacketBuilder, ARPPacketBuilder, DHCPPacketBuilder
+from magma.pipelined.bridge_util import BridgeTools
+from magma.pipelined.openflow.magma_match import MagmaMatch
+from magma.pipelined.tests.app.flow_query import RyuDirectFlowQuery as FlowQuery
+from magma.pipelined.tests.app.packet_builder import (
+    ARPPacketBuilder,
+    DHCPPacketBuilder,
+    EtherPacketBuilder,
+    UDPPacketBuilder,
+)
 from magma.pipelined.tests.app.packet_injector import ScapyPacketInjector
 from magma.pipelined.tests.app.start_pipelined import (
-    TestSetup,
     PipelinedController,
+    TestSetup,
 )
-from magma.pipelined.openflow.magma_match import MagmaMatch
-from magma.pipelined.tests.app.flow_query import RyuDirectFlowQuery \
-    as FlowQuery
-from ryu.ofproto.ofproto_v1_4 import OFPP_LOCAL
-from magma.pipelined.bridge_util import BridgeTools
 from magma.pipelined.tests.pipelined_test_util import (
+    FlowTest,
+    FlowVerifier,
+    SnapshotVerifier,
+    create_service_manager,
+    fake_inout_setup,
     start_ryu_app_thread,
     stop_ryu_app_thread,
-    create_service_manager,
     wait_after_send,
-    FlowVerifier,
-    FlowTest,
-    SnapshotVerifier,
-    fake_inout_setup,
 )
 from ryu.lib import hub
+from ryu.ofproto.ofproto_v1_4 import OFPP_LOCAL
 
 
 class UEMacAddressTest(unittest.TestCase):
@@ -53,8 +55,10 @@ class UEMacAddressTest(unittest.TestCase):
     DPI_IP = '1.1.1.1'
 
     @classmethod
-    @unittest.mock.patch('netifaces.ifaddresses',
-                return_value=[[{'addr': '00:aa:bb:cc:dd:ee'}]])
+    @unittest.mock.patch(
+        'netifaces.ifaddresses',
+        return_value=[[{'addr': '00:aa:bb:cc:dd:ee'}]],
+    )
     @unittest.mock.patch('netifaces.AF_LINK', 0)
     def setUpClass(cls, *_):
         """
@@ -68,7 +72,8 @@ class UEMacAddressTest(unittest.TestCase):
         warnings.simplefilter('ignore')
         cls.service_manager = create_service_manager([], ['ue_mac', 'arpd'])
         cls._tbl_num = cls.service_manager.get_table_num(
-            UEMacAddressController.APP_NAME)
+            UEMacAddressController.APP_NAME,
+        )
         cls._ingress_tbl_num = cls.service_manager.get_table_num(INGRESS)
         cls._egress_tbl_num = cls.service_manager.get_table_num(EGRESS)
 
@@ -76,11 +81,13 @@ class UEMacAddressTest(unittest.TestCase):
         ue_mac_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.InOut,
-                  PipelinedController.Arp,
-                  PipelinedController.UEMac,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.InOut,
+                PipelinedController.Arp,
+                PipelinedController.UEMac,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.InOut:
                     inout_controller_reference,
@@ -121,8 +128,10 @@ class UEMacAddressTest(unittest.TestCase):
         )
 
         BridgeTools.create_bridge(cls.BRIDGE, cls.IFACE)
-        BridgeTools.create_internal_iface(cls.BRIDGE, cls.DPI_PORT,
-                                          cls.DPI_IP)
+        BridgeTools.create_internal_iface(
+            cls.BRIDGE, cls.DPI_PORT,
+            cls.DPI_IP,
+        )
 
         cls.thread = start_ryu_app_thread(test_setup)
         cls.ue_mac_controller = ue_mac_controller_reference.result()
@@ -175,8 +184,10 @@ class UEMacAddressTest(unittest.TestCase):
 
         # Check if these flows were added (queries should return flows)
         flow_queries = [
-            FlowQuery(self._tbl_num, self.testing_controller,
-                      match=MagmaMatch(eth_dst=self.UE_MAC_1))
+            FlowQuery(
+                self._tbl_num, self.testing_controller,
+                match=MagmaMatch(eth_dst=self.UE_MAC_1),
+            ),
         ]
 
         # =========================== Verification ===========================
@@ -185,17 +196,32 @@ class UEMacAddressTest(unittest.TestCase):
         #        2 flows installed (2 pkts matches)
         flow_verifier = FlowVerifier(
             [
-                FlowTest(FlowQuery(self._tbl_num,
-                                   self.testing_controller), 4, 3),
-                FlowTest(FlowQuery(self._ingress_tbl_num,
-                                   self.testing_controller), 4, 2),
-                FlowTest(FlowQuery(self._egress_tbl_num,
-                                   self.testing_controller), 3, 2),
+                FlowTest(
+                    FlowQuery(
+                        self._tbl_num,
+                        self.testing_controller,
+                    ), 4, 3,
+                ),
+                FlowTest(
+                    FlowQuery(
+                        self._ingress_tbl_num,
+                        self.testing_controller,
+                    ), 4, 2,
+                ),
+                FlowTest(
+                    FlowQuery(
+                        self._egress_tbl_num,
+                        self.testing_controller,
+                    ), 3, 2,
+                ),
                 FlowTest(flow_queries[0], 4, 1),
-            ], lambda: wait_after_send(self.testing_controller))
+            ], lambda: wait_after_send(self.testing_controller),
+        )
 
-        snapshot_verifier = SnapshotVerifier(self, self.BRIDGE,
-                                             self.service_manager)
+        snapshot_verifier = SnapshotVerifier(
+            self, self.BRIDGE,
+            self.service_manager,
+        )
 
         with flow_verifier, snapshot_verifier:
             pkt_sender.send(dhcp_packet)

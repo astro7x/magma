@@ -1,9 +1,11 @@
 ---
 id: dev_notes
-title: Developer Notes for Access Gateway
+title: Developer Notes
 hide_title: true
 ---
-# Developer Notes for Access Gateway
+
+# Developer Notes
+
 This section provides a guide for anyone testing existing features,
 fixing a bug or adding a new feature to the Access Gateway. All developers are
 highly encouraged to maintain this guide to make sure it is up to date and
@@ -78,10 +80,54 @@ IMSI>`
 
 1. On the UE, turn airplane mode on, then off, to trigger a fresh attach
 
+### Connecting a physical AGW to S1AP test VM
+Another useful combination is to run the [S1ap integration tests](s1ap_tests.md)
+on a physical AGW directly connected to the host machine running the
+*magma_test* VM.
+
+**On the magma_test host machine**
+- Connect `eth1` of the physical AGW to a port on the host machine, say it is
+interface `en9`.
+- From the VirtualBox GUI, switch the Adapter 1 (for `eth1` interface) from
+`Host-only` to `Bridged` mode and bridge it to interface `en9` from above.
+
+**On the physical AGW**
+- Change the static IP address of `eth1` to match the one expected by the test
+VM
+  - `sudo sed -i 's/address 10.0.2.1/address 192.168.60.142/g'`
+  ` /etc/network/interfaces.d/eth1`
+  - `sudo ifdown eth1`
+  - `sudo ifup eth1`
+  - `sudo ip addr del 10.0.2.1/24 dev eth1`
+- Enable DEV_MODE
+  - `sudo bash -c 'echo "MAGMA_DEV_MODE=1" >> /etc/environment'`
+- Enable Pipelined `ryu_rest_service`
+  - `grep -qF 'ryu_rest_service' /etc/magma/pipelined.yml || sudo sed -i `
+`"s/static_services: \[/static_services: \[ \'ryu_rest_service\',/g"`
+` /etc/magma/pipelined.yml`
+- Restart all services
+  - `sudo service sctpd restart`
+
+**On the test VM**
+- Change credentials
+  - `sudo sed -i 's/"vagrant"/"magma"/g'`
+` /home/vagrant/magma/lte/gateway/python/integ_tests/s1aptests/s1ap_utils.py`
+- Disable use of `magtivate`
+  - `sudo sed -i 's/magtivate_cmd + " && " + //g'`
+` /home/vagrant/magma/lte/gateway/python/integ_tests/s1aptests/s1ap_utils.py`
+
+Now, you can run the [S1ap integration tests](s1ap_tests.md) as usual.
+
 ## Debugging
 ### Logs
 To change the logging level for a particular service, please modify the
-`log_level` in `/etc/magma/<service_name>.yml`
+`log_level` in `/etc/magma/<service_name>.yml`. If `log_level` is missing just
+add it. You can use `INFO`, `WARNING`, `ERROR`, `DEBUG`. When `log_level` is
+missing, the default level is the lowset, `INFO`
+
+To see GRPC messages on your log, check next section
+
+You can check the logs in different places:
 
 - `/var/log/syslog`: gives a good view of all the Magma services
 running on the AGW. This is a good place to check whether the AGW is connecting
@@ -97,6 +143,21 @@ created by the MME service. The Mme service creates a new log file with name
 (re)started. The AGW maintains the 10 most recent log files.
 
 - `/var/log/enodebd.log` contains the logs from Enodebd
+
+### Enabling GRPC printing on log
+In case you want to see the content of the messages you will have to enable
+GRPC printing. You will see the content of GRPC on the same log mentioned in
+the section previous (`/var/log/syslog`). By default, it is disabled.
+
+Note GRPC printing is independent of the `log_level`. So you can enabled GRPC
+printing even that your level is set as `INFO`.
+
+To enable GRPC logging for `magmad`, `sessiond`, `pipelined`, `mobilityd`,
+`directoryd` or`subscriberdb` you can modify this line on the
+`/etc/magma/<service_name>.yml` config file:
+```yaml
+print_grpc_payload: true
+```
 
 ### CLIs
 Many services have a command line interface (CLI) that can be used for
@@ -161,7 +222,7 @@ can list all the keys with `KEYS *`. The keys for state follow the pattern
 gateway wide state for a particular task in the MME process
 - Mobilityd stores state with the key `mobilityd:sid_to_descriptors`
 
-For tracing the state values, there's a specific CLI for debugging 
+For tracing the state values, there's a specific CLI for debugging
 different Magma services' data written into Redis. You can access it through
 the `state_cli.py` command.
 

@@ -12,9 +12,13 @@
  */
 #pragma once
 
-#include <memory>
-
 #include <lte/protos/session_manager.grpc.pb.h>
+
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "StoreClient.h"
 #include "StoredState.h"
@@ -31,6 +35,8 @@ class MemoryStoreClient final : public StoreClient {
   MemoryStoreClient(MemoryStoreClient const&) = delete;
   MemoryStoreClient(MemoryStoreClient&&)      = default;
   ~MemoryStoreClient()                        = default;
+
+  bool is_ready() { return true; }
 
   SessionMap read_sessions(std::set<std::string> subscriber_ids);
 

@@ -73,6 +73,7 @@ meter:
 enforcement:
   poll_interval: 5
   default_drop_flow_name: 'internal_default_drop_flow_rule'
+  periodic_stats_reporting: true
 
 # Enable polling mobilityd to identify which subscriber sessions need to be
 # terminated. If disabling this, make sure to set a valid idle_timeout for
@@ -127,7 +128,7 @@ ipv6_router_addr: 'd88d:aba4:472f:fc95:7e7d:8457:5301:ebce'
 
 # QoS parameters
 qos:
- enable: true
+ enable: false
  impl: ovs_meter
  max_rate: 1000000000
  linux_tc:

@@ -15,27 +15,34 @@ import logging
 import os
 import re
 import subprocess
-import netifaces
-
 from collections import namedtuple
 from concurrent.futures import Future
+from datetime import datetime
 from difflib import unified_diff
 from typing import Dict, List, Optional
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock
-from ryu.lib import hub
 
+import fakeredis
+import netifaces
 from lte.protos.mconfig.mconfigs_pb2 import PipelineD
-from lte.protos.pipelined_pb2 import SetupFlowsResult, SetupPolicyRequest, \
-    UpdateSubscriberQuotaStateRequest, SetupUEMacRequest
+from lte.protos.pipelined_pb2 import (
+    SetupFlowsResult,
+    SetupPolicyRequest,
+    SetupUEMacRequest,
+    UpdateSubscriberQuotaStateRequest,
+)
+from magma.pipelined.app.base import global_epoch
 from magma.pipelined.bridge_util import BridgeTools
+from magma.pipelined.openflow import flows
 from magma.pipelined.service_manager import ServiceManager
-from magma.pipelined.tests.app.exceptions import BadConfigError, \
-    ServiceRunningError
+from magma.pipelined.tests.app.exceptions import (
+    BadConfigError,
+    ServiceRunningError,
+)
 from magma.pipelined.tests.app.flow_query import RyuDirectFlowQuery
 from magma.pipelined.tests.app.start_pipelined import StartThread
-from magma.pipelined.app.base import global_epoch
-from magma.pipelined.openflow import flows
+from ryu.lib import hub
 
 """
 Pipelined test util functions can be used for testing pipelined, the usage of
@@ -277,6 +284,7 @@ def fake_controller_setup(enf_controller=None,
         SetupFlowsResult.SUCCESS)
     if enf_stats_controller:
         enf_stats_controller.init_finished = False
+        enf_stats_controller.cleanup_state()
         TestCase().assertEqual(setup_controller(
             enf_stats_controller, setup_flows_request),
             SetupFlowsResult.SUCCESS)
@@ -321,8 +329,15 @@ def wait_for_enforcement_stats(controller, rule_list, wait_time=1,
     """
     sleep_time = 0
     stats_reported = {rule: False for rule in rule_list}
+    times_called = len(controller._report_usage.call_args_list)
+    controller._last_report_timestamp = datetime.now()
     while not all(stats_reported[rule] for rule in rule_list):
         hub.sleep(wait_time)
+
+        #There is no sessiond report callback in testing so manually reset var
+        if times_called != len(controller._report_usage.call_args_list):
+            times_called = len(controller._report_usage.call_args_list)
+            controller._last_report_timestamp = datetime.now()
         for reported_stats in controller._report_usage.call_args_list:
             stats = reported_stats[0][0]
             for rule in rule_list:
@@ -376,7 +391,12 @@ def create_service_manager(services: List[int],
         'static_services': static_services,
         '5G_feature_set': {'enable': False}
     }
-    service_manager = ServiceManager(magma_service)
+    # mock the get_default_client function used to return a fakeredis object
+    func_mock = MagicMock(return_value=fakeredis.FakeStrictRedis())
+    with mock.patch(
+            'magma.pipelined.rule_mappers.get_default_client',
+            func_mock):
+        service_manager = ServiceManager(magma_service)
 
     # Workaround as we don't use redis in unit tests
     service_manager.rule_id_mapper._rule_nums_by_rule = {}
@@ -417,7 +437,7 @@ def fail(test_case: TestCase, err_msg: str, _bridge_name: str,
     p = subprocess.Popen([ofctl_cmd],
                          stdout=subprocess.PIPE,
                          shell=True)
-    ofctl_dump = p.stdout.read().decode("utf-8").strip()
+    ofctl_dump = p.stdout.read().decode("utf-8", 'ignore').strip()
     logging.error("cmd ofctl_dump: %s", ofctl_dump)
 
     msg = 'Snapshot mismatch with error:\n' \
@@ -494,7 +514,7 @@ def wait_for_snapshots(test_case: TestCase,
                        snapshot_name: Optional[str] = None,
                        wait_time: int = 1, max_sleep_time: int = 20,
                        datapath=None,
-                       try_snapshot=False):
+                       try_snapshot=False, include_stats=True):
     """
     Wait after checking ovs snapshot as new changes might still come in,
 
@@ -507,13 +527,15 @@ def wait_for_snapshots(test_case: TestCase,
     Throws a WaitTimeExceeded Exception if max_sleep_time exceeded
     """
     sleep_time = 0
-    old_snapshot = _get_current_bridge_snapshot(bridge_name, service_manager)
+    old_snapshot = _get_current_bridge_snapshot(bridge_name, service_manager,
+        include_stats=include_stats)
     while True:
         if datapath:
             flows.set_barrier(datapath)
         hub.sleep(wait_time)
 
-        new_snapshot = _get_current_bridge_snapshot(bridge_name, service_manager)
+        new_snapshot = _get_current_bridge_snapshot(bridge_name, service_manager,
+            include_stats=include_stats)
         if try_snapshot:
             snapshot_file, expected_ = expected_snapshot(test_case,
                                                          bridge_name,
@@ -580,7 +602,8 @@ class SnapshotVerifier:
                                self._snapshot_name,
                                max_sleep_time=self._max_sleep_time,
                                datapath=self._datapath,
-                               try_snapshot=self._try_snapshot)
+                               try_snapshot=self._try_snapshot,
+                               include_stats=self._include_stats)
         except WaitTimeExceeded as e:
             ofctl_cmd = "sudo ovs-ofctl dump-flows %s".format(self._bridge_name)
             p = subprocess.Popen([ofctl_cmd],

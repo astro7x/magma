@@ -12,14 +12,14 @@
  */
 #pragma once
 
-#include <functional>
-#include <memory>
-
 #include <folly/io/async/EventBase.h>
 #include <grpc++/grpc++.h>
 #include <lte/protos/session_manager.grpc.pb.h>
 
-#include "GRPCReceiver.h"
+#include <functional>
+#include <memory>
+
+#include "includes/GRPCReceiver.h"
 
 namespace magma {
 using namespace lte;
@@ -51,6 +51,8 @@ class AsyncEvbResponse : public AsyncGRPCResponse<ResponseType> {
 
 class SessionReporter : public GRPCReceiver {
  public:
+  virtual ~SessionReporter() = default;
+
   /**
    * Either proxy an UpdateSessionRequest gRPC call to the cloud
    * or send the request to the local PCRF/OCS on the gateway

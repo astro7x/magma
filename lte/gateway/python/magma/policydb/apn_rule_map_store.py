@@ -14,8 +14,10 @@ limitations under the License.
 from lte.protos.policydb_pb2 import SubscriberPolicySet
 from magma.common.redis.client import get_default_client
 from magma.common.redis.containers import RedisHashDict
-from magma.common.redis.serializers import get_proto_deserializer, \
-    get_proto_serializer
+from magma.common.redis.serializers import (
+    get_proto_deserializer,
+    get_proto_serializer,
+)
 
 
 class ApnRuleAssignmentsDict(RedisHashDict):
@@ -35,6 +37,6 @@ class ApnRuleAssignmentsDict(RedisHashDict):
             client,
             self._DICT_HASH,
             get_proto_serializer(),
-            get_proto_deserializer(SubscriberPolicySet)
+            get_proto_deserializer(SubscriberPolicySet),
         )
         self._clear()

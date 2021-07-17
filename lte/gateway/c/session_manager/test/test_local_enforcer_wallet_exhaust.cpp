@@ -10,25 +10,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <chrono>
-#include <future>
-#include <memory>
-#include <string.h>
-#include <time.h>
-
 #include <folly/io/async/EventBaseManager.h>
 #include <gtest/gtest.h>
 #include <lte/protos/session_manager.grpc.pb.h>
+#include <string.h>
+#include <time.h>
+
+#include <chrono>
+#include <future>
+#include <memory>
 
 #include "Consts.h"
 #include "LocalEnforcer.h"
-#include "MagmaService.h"
+#include "magma_logging.h"
+#include "includes/MagmaService.h"
 #include "Matchers.h"
 #include "ProtobufCreators.h"
-#include "ServiceRegistrySingleton.h"
-#include "SessionStore.h"
+#include "includes/ServiceRegistrySingleton.h"
 #include "SessiondMocks.h"
-#include "magma_logging.h"
+#include "SessionStore.h"
 
 #define SECONDS_A_DAY 86400
 
@@ -43,18 +43,17 @@ Teids teids0;
 class LocalEnforcerTest : public ::testing::Test {
  protected:
   void SetUpWithMConfig(magma::mconfig::SessionD mconfig) {
-    reporter          = std::make_shared<MockSessionReporter>();
-    rule_store        = std::make_shared<StaticRuleStore>();
-    session_store     = std::make_shared<SessionStore>(rule_store);
-    pipelined_client  = std::make_shared<MockPipelinedClient>();
-    directoryd_client = std::make_shared<MockDirectorydClient>();
-    spgw_client       = std::make_shared<MockSpgwServiceClient>();
-    aaa_client        = std::make_shared<MockAAAClient>();
-    events_reporter   = std::make_shared<MockEventsReporter>();
-    local_enforcer    = std::make_unique<LocalEnforcer>(
-        reporter, rule_store, *session_store, pipelined_client,
-        directoryd_client, events_reporter, spgw_client, aaa_client, 0, 0,
-        mconfig);
+    reporter      = std::make_shared<MockSessionReporter>();
+    rule_store    = std::make_shared<StaticRuleStore>();
+    session_store = std::make_shared<SessionStore>(
+        rule_store, std::make_shared<MeteringReporter>());
+    pipelined_client = std::make_shared<MockPipelinedClient>();
+    spgw_client      = std::make_shared<MockSpgwServiceClient>();
+    aaa_client       = std::make_shared<MockAAAClient>();
+    events_reporter  = std::make_shared<MockEventsReporter>();
+    local_enforcer   = std::make_unique<LocalEnforcer>(
+        reporter, rule_store, *session_store, pipelined_client, events_reporter,
+        spgw_client, aaa_client, 0, 0, mconfig);
     evb = folly::EventBaseManager::get()->getEventBase();
     local_enforcer->attachEventBase(evb);
     session_map = SessionMap{};
@@ -76,7 +75,6 @@ class LocalEnforcerTest : public ::testing::Test {
   magma::mconfig::SessionD get_mconfig_gx_rule_wallet_exhaust() {
     magma::mconfig::SessionD mconfig;
     mconfig.set_log_level(magma::orc8r::LogLevel::INFO);
-    mconfig.set_relay_enabled(false);
     mconfig.set_gx_gy_relay_enabled(false);
     auto wallet_config = mconfig.mutable_wallet_exhaust_detection();
     wallet_config->set_terminate_on_exhaust(true);
@@ -88,9 +86,7 @@ class LocalEnforcerTest : public ::testing::Test {
   void insert_static_rule(
       uint32_t rating_group, const std::string& m_key,
       const std::string& rule_id) {
-    PolicyRule rule;
-    create_policy_rule(rule_id, m_key, rating_group, &rule);
-    rule_store->insert_rule(rule);
+    rule_store->insert_rule(create_policy_rule(rule_id, m_key, rating_group));
   }
 
  protected:
@@ -99,7 +95,6 @@ class LocalEnforcerTest : public ::testing::Test {
   std::shared_ptr<SessionStore> session_store;
   std::unique_ptr<LocalEnforcer> local_enforcer;
   std::shared_ptr<MockPipelinedClient> pipelined_client;
-  std::shared_ptr<MockDirectorydClient> directoryd_client;
   std::shared_ptr<MockSpgwServiceClient> spgw_client;
   std::shared_ptr<MockAAAClient> aaa_client;
   std::shared_ptr<MockEventsReporter> events_reporter;
@@ -192,8 +187,7 @@ TEST_F(LocalEnforcerTest, test_cwf_quota_exhaustion_on_init_has_quota) {
       *pipelined_client,
       update_subscriber_quota_state(
           CheckSubscriberQuotaUpdate(SubscriberQuotaUpdate_Type_VALID_QUOTA)))
-      .Times(1)
-      .WillOnce(testing::Return(true));
+      .Times(1);
   local_enforcer->init_session(
       session_map, IMSI1, SESSION_ID_1, cwf_session_config, response);
   local_enforcer->update_tunnel_ids(
@@ -215,8 +209,7 @@ TEST_F(LocalEnforcerTest, test_cwf_quota_exhaustion_on_init_no_quota) {
       *pipelined_client,
       update_subscriber_quota_state(
           CheckSubscriberQuotaUpdate(SubscriberQuotaUpdate_Type_NO_QUOTA)))
-      .Times(1)
-      .WillOnce(testing::Return(true));
+      .Times(1);
   local_enforcer->init_session(
       session_map, IMSI1, SESSION_ID_1, cwf_session_config, response);
   local_enforcer->update_tunnel_ids(
@@ -250,8 +243,7 @@ TEST_F(LocalEnforcerTest, test_cwf_quota_exhaustion_on_rar) {
       *pipelined_client,
       update_subscriber_quota_state(
           CheckSubscriberQuotaUpdate(SubscriberQuotaUpdate_Type_TERMINATE)))
-      .Times(1)
-      .WillOnce(testing::Return(true));
+      .Times(1);
 
   PolicyReAuthAnswer answer;
   auto update = SessionStore::get_default_session_update(session_map);
@@ -299,8 +291,7 @@ TEST_F(LocalEnforcerTest, test_cwf_quota_exhaustion_on_update) {
       *pipelined_client,
       update_subscriber_quota_state(
           CheckSubscriberQuotaUpdate(SubscriberQuotaUpdate_Type_TERMINATE)))
-      .Times(1)
-      .WillOnce(testing::Return(true));
+      .Times(1);
 
   local_enforcer->update_session_credits_and_rules(
       session_map, update_response, update);

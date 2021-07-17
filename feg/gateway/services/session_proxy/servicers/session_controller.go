@@ -14,6 +14,7 @@ limitations under the License.
 package servicers
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/thoas/go-funk"
-	"golang.org/x/net/context"
 )
 
 // CentralSessionController acts as the gRPC server for accepting calls from
@@ -109,13 +109,16 @@ func (srv *CentralSessionController) CreateSession(
 	gxOriginHost, gyOriginHost := gxCCAInit.OriginHost, ""
 
 	credits := []*protos.CreditUpdateResponse{}
-	// Gy
-	if srv.cfg.DisableGy == false {
+
+	// Gy: only send Gy if it is Enabled and flag Online is true (1)
+	if !srv.cfg.DisableGy {
 		if srv.cfg.UseGyForAuthOnly {
 			return srv.handleUseGyForAuthOnly(
 				imsi, request, staticRuleInstalls, dynamicRuleInstalls, gxCCAInit)
 		}
-		if len(chargingKeys) > 0 {
+		if !gx.Int32ToBoolean(gxCCAInit.Online) {
+			glog.V(2).Info("Online AVP (1009) is 0. Not sending Gy CCI-R")
+		} else if len(chargingKeys) > 0 {
 			gyCCRInit := makeCCRInit(imsi, request, chargingKeys)
 			gyCCAInit, err := srv.sendSingleCreditRequest(gyCCRInit)
 			metrics.ReportCreateGySession(err)
@@ -138,6 +141,8 @@ func (srv *CentralSessionController) CreateSession(
 		SessionId:        request.SessionId,
 		EventTriggers:    eventTriggers,
 		RevalidationTime: revalidationTime,
+		Online:           gx.Int32ToBoolean(gxCCAInit.Online),
+		Offline:          gx.Int32ToBoolean(gxCCAInit.Offline),
 	}, nil
 }
 
@@ -318,10 +323,10 @@ func (srv *CentralSessionController) Disable(
 	if req == nil {
 		return nil, fmt.Errorf("Nil Disable Request")
 	}
-	if srv.cfg.DisableGx == false {
+	if !srv.cfg.DisableGx {
 		srv.policyClient.DisableConnections(time.Duration(req.DisablePeriodSecs) * time.Second)
 	}
-	if srv.cfg.DisableGy == false {
+	if !srv.cfg.DisableGy {
 		srv.creditClient.DisableConnections(time.Duration(req.DisablePeriodSecs) * time.Second)
 	}
 	return &orcprotos.Void{}, nil
@@ -335,13 +340,13 @@ func (srv *CentralSessionController) Enable(
 	void *orcprotos.Void,
 ) (*orcprotos.Void, error) {
 	multiError := errors.NewMulti()
-	if srv.cfg.DisableGx == false {
+	if !srv.cfg.DisableGx {
 		err := srv.policyClient.EnableConnections()
 		if err != nil {
 			multiError.Add(fmt.Errorf("An error occurred while enabling connections; policyClient err: %s", err))
 		}
 	}
-	if srv.cfg.DisableGy == false {
+	if !srv.cfg.DisableGy {
 		err := srv.creditClient.EnableConnections()
 		if err != nil {
 			multiError.Add(fmt.Errorf("An error occurred while enabling connections; creditClient err: %s", err))
@@ -360,7 +365,7 @@ func (srv *CentralSessionController) GetHealthStatus(
 	if err != nil {
 		return &fegprotos.HealthStatus{
 			Health:        fegprotos.HealthStatus_UNHEALTHY,
-			HealthMessage: fmt.Sprintf("Error occured while retrieving health metrics: %s", err),
+			HealthMessage: fmt.Sprintf("Error occurred while retrieving health metrics: %s", err),
 		}, err
 	}
 	deltaMetrics, err := srv.healthTracker.Metrics.GetDelta(currentMetrics)
@@ -398,7 +403,7 @@ func (srv *CentralSessionController) GetHealthStatus(
 }
 
 func (srv *CentralSessionController) getHealthStatusForGxRequests(failures, total int64) *fegprotos.HealthStatus {
-	if srv.cfg.DisableGx == false {
+	if !srv.cfg.DisableGx {
 		gxExceedsThreshold := total >= int64(srv.healthTracker.MinimumRequestThreshold) &&
 			float64(failures)/float64(total) >= float64(srv.healthTracker.RequestFailureThreshold)
 		if gxExceedsThreshold {
@@ -420,7 +425,7 @@ func (srv *CentralSessionController) getHealthStatusForGxRequests(failures, tota
 }
 
 func (srv *CentralSessionController) getHealthStatusForGyRequests(failures, total int64) *fegprotos.HealthStatus {
-	if srv.cfg.DisableGy == false {
+	if !srv.cfg.DisableGy {
 		gyExceedsThreshold := total >= int64(srv.healthTracker.MinimumRequestThreshold) &&
 			float64(failures)/float64(total) >= float64(srv.healthTracker.RequestFailureThreshold)
 		if gyExceedsThreshold {

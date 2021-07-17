@@ -11,19 +11,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import ctypes
 import os
 import time
-import ctypes
 
 import s1ap_types
 from integ_tests.common.magmad_client import MagmadServiceGrpc
-
 # from integ_tests.cloud.cloud_manager import CloudManager
 from integ_tests.common.mobility_service_client import MobilityServiceGrpc
 from integ_tests.common.service303_utils import GatewayServicesUtil
 from integ_tests.common.subscriber_db_client import (
-    SubscriberDbGrpc,
     SubscriberDbCassandra,
+    SubscriberDbGrpc,
 )
 from integ_tests.s1aptests.s1ap_utils import (
     MagmadUtil,
@@ -58,6 +57,7 @@ class TestWrapper(object):
         self,
         stateless_mode=MagmadUtil.stateless_cmds.ENABLE,
         apn_correction=MagmadUtil.apn_correction_cmds.DISABLE,
+        health_service=MagmadUtil.health_service_cmds.DISABLE,
     ):
         """
         Initialize the various classes required by the tests and setup.
@@ -85,6 +85,7 @@ class TestWrapper(object):
         self._magmad_util = MagmadUtil(magmad_client)
         self._magmad_util.config_stateless(stateless_mode)
         self._magmad_util.config_apn_correction(apn_correction)
+        self._magmad_util.config_health_service(health_service)
         # gateway tests don't require restart, just wait for healthy now
         self._gateway_services = GatewayServicesUtil()
         if not self.wait_gateway_healthy:
@@ -240,7 +241,7 @@ class TestWrapper(object):
             # APN configuration below can be overwritten in the test case
             # after configuring UE device.
             self.configAPN(
-                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None
+                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None,
             )
             self._configuredUes.append(reqs[i])
 
@@ -267,7 +268,7 @@ class TestWrapper(object):
             # APN configuration below can be overwritten in the test case
             # after configuring UE device.
             self.configAPN(
-                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None
+                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None,
             )
             self._configuredUes.append(reqs[i])
         for i in range(num_ues):
@@ -309,7 +310,7 @@ class TestWrapper(object):
             # APN configuration below can be overwritten in the test case
             # after configuring UE device.
             self.configAPN(
-                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None
+                "IMSI" + "".join([str(j) for j in reqs[i].imsi]), None,
             )
             self._configuredUes.append(reqs[i])
 
@@ -358,10 +359,10 @@ class TestWrapper(object):
             if not ip:
                 raise ValueError(
                     "Encountered invalid IP for UE ID %s."
-                    " Are you sure the UE is attached?" % ue
+                    " Are you sure the UE is attached?" % ue,
                 )
         return self._trf_util.generate_traffic_test(
-            ips, is_uplink=False, **kwargs
+            ips, is_uplink=False, **kwargs,
         )
 
     def configUplinkTest(self, *ues, **kwargs):
@@ -379,10 +380,10 @@ class TestWrapper(object):
             if not ip:
                 raise ValueError(
                     "Encountered invalid IP for UE ID %s."
-                    " Are you sure the UE is attached?" % ue
+                    " Are you sure the UE is attached?" % ue,
                 )
         return self._trf_util.generate_traffic_test(
-            ips, is_uplink=True, **kwargs
+            ips, is_uplink=True, **kwargs,
         )
 
     def get_gateway_services_util(self):
@@ -456,7 +457,7 @@ class TestWrapper(object):
         print("***************** Sending Multiple Enb Config Request\n")
         assert (
             self._s1_util.issue_cmd(
-                s1ap_types.tfwCmd.MULTIPLE_ENB_CONFIG_REQ, req
+                s1ap_types.tfwCmd.MULTIPLE_ENB_CONFIG_REQ, req,
             )
             == 0
         )
@@ -466,11 +467,11 @@ class TestWrapper(object):
         act_ded_bearer_acc.ue_Id = ue_id
         act_ded_bearer_acc.bearerId = bearerId
         self._s1_util.issue_cmd(
-            s1ap_types.tfwCmd.UE_ACT_DED_BER_ACC, act_ded_bearer_acc
+            s1ap_types.tfwCmd.UE_ACT_DED_BER_ACC, act_ded_bearer_acc,
         )
         print(
             "************** Sending activate dedicated EPS bearer "
-            "context accept\n"
+            "context accept\n",
         )
 
     def sendDeactDedicatedBearerAccept(self, ue_id, bearerId):
@@ -478,12 +479,12 @@ class TestWrapper(object):
         deact_ded_bearer_acc.ue_Id = ue_id
         deact_ded_bearer_acc.bearerId = bearerId
         self._s1_util.issue_cmd(
-            s1ap_types.tfwCmd.UE_DEACTIVATE_BER_ACC, deact_ded_bearer_acc
+            s1ap_types.tfwCmd.UE_DEACTIVATE_BER_ACC, deact_ded_bearer_acc,
         )
         print("************* Sending deactivate EPS bearer context accept\n")
 
     def sendPdnConnectivityReq(
-        self, ue_id, apn, pdn_type=1, pcscf_addr_type=None, dns_ipv6_addr=False
+        self, ue_id, apn, pdn_type=1, pcscf_addr_type=None, dns_ipv6_addr=False,
     ):
         req = s1ap_types.uepdnConReq_t()
         req.ue_Id = ue_id
@@ -495,13 +496,13 @@ class TestWrapper(object):
         req.pdnAPN_pr.pres = 1
         req.pdnAPN_pr.len = len(apn)
         req.pdnAPN_pr.pdn_apn = (ctypes.c_ubyte * 100)(
-            *[ctypes.c_ubyte(ord(c)) for c in apn[:100]]
+            *[ctypes.c_ubyte(ord(c)) for c in apn[:100]],
         )
         print("********* PDN type", pdn_type)
         # Populate PCO if pcscf_addr_type is set
         if pcscf_addr_type or dns_ipv6_addr:
             self._s1_util.populate_pco(
-                req.protCfgOpts_pr, pcscf_addr_type, dns_ipv6_addr
+                req.protCfgOpts_pr, pcscf_addr_type, dns_ipv6_addr,
             )
 
         self.s1_util.issue_cmd(s1ap_types.tfwCmd.UE_PDN_CONN_REQ, req)

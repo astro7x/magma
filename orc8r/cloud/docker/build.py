@@ -30,6 +30,7 @@ HOST_MAGMA_ROOT = '../../../.'
 IMAGE_MAGMA_ROOT = os.path.join('src', 'magma')
 
 GOLINT_FILE = '.golangci.yml'
+TEST_RESULT_DIR = 'orc8r/cloud/test-results'
 
 MODULES = [
     'orc8r',
@@ -42,16 +43,16 @@ MODULES = [
 
 DEPLOYMENT_TO_MODULES = {
     'all': MODULES,
-    'orc8r': [],
-    'orc8r-f': ['fbinternal'],
-    'fwa': ['lte'],
-    'fwa-f': ['lte', 'fbinternal'],
-    'ffwa': ['lte', 'feg'],
-    'ffwa-f': ['lte', 'feg', 'fbinternal'],
-    'cwf': ['lte', 'feg', 'cwf'],
-    'cwf-f': ['lte', 'feg', 'cwf', 'fbinternal'],
-    'wifi': ['wifi'],
-    'wifi-f': ['wifi', 'fbinternal'],
+    'orc8r': ['orc8r'],
+    'orc8r-f': ['orc8r', 'fbinternal'],
+    'fwa': ['orc8r', 'lte'],
+    'fwa-f': ['orc8r', 'lte', 'fbinternal'],
+    'ffwa': ['orc8r', 'lte', 'feg'],
+    'ffwa-f': ['orc8r', 'lte', 'feg', 'fbinternal'],
+    'cwf': ['orc8r', 'lte', 'feg', 'cwf'],
+    'cwf-f': ['orc8r', 'lte', 'feg', 'cwf', 'fbinternal'],
+    'wifi': ['orc8r', 'wifi'],
+    'wifi-f': ['orc8r', 'wifi', 'fbinternal'],
 }
 
 DEPLOYMENTS = DEPLOYMENT_TO_MODULES.keys()
@@ -91,15 +92,19 @@ def main() -> None:
         _run(['build', 'test'])
         _run(['run', '--rm'] + _get_mnt_vols(mods) + ['test', 'make precommit'])
         _down(args)
+    elif args.coverage:
+        _run(['up', '-d', 'postgres_test'])
+        _run(['build', 'test'])
+        _run(['run', '--rm'] + _get_mnt_vols(mods) + ['test', 'make cover'])
+        _down(args)
     elif args.tests:
         _run(['up', '-d', 'postgres_test'])
         _run(['build', 'test'])
-        _run(['run', '--rm', 'test', 'make test'])
+        _run(['run', '--rm'] + _get_test_result_vol() + ['test', 'make test'])
         _down(args)
     else:
         d_args = _get_default_file_args(args) + _get_default_build_args(args)
         _run(d_args)
-        _down(args)
 
 
 def _get_modules(mods: Iterable[str]) -> Iterable[MagmaModule]:
@@ -145,13 +150,27 @@ def _get_mnt_vols(modules: Iterable[MagmaModule]) -> List[str]:
         # .golangci.yml file
         '-v', '%s:%s' % (
             os.path.abspath(os.path.join(HOST_MAGMA_ROOT, GOLINT_FILE)),
-            os.path.join(os.sep, IMAGE_MAGMA_ROOT, GOLINT_FILE)
+            os.path.join(os.sep, IMAGE_MAGMA_ROOT, GOLINT_FILE),
         ),
     ]
     # Per-module directory mounts
     for m in modules:
         vols.extend(['-v', '%s:%s' % (m.host_path, _get_module_image_dst(m))])
     return vols
+
+
+def _get_test_result_vol() -> List[str]:
+    """Return the volume argment to mount TEST_RESULT_DIR
+
+    Returns:
+        List[str]: -v command to mount TEST_RESULT_DIR
+    """
+    return [
+        '-v', '%s:%s' % (
+            os.path.abspath(os.path.join(HOST_MAGMA_ROOT, TEST_RESULT_DIR)),
+            os.path.join(os.sep, IMAGE_MAGMA_ROOT, TEST_RESULT_DIR),
+        ),
+    ]
 
 
 def _get_default_file_args(args: argparse.Namespace) -> List[str]:
@@ -281,6 +300,11 @@ def _parse_args() -> argparse.Namespace:
         '--lint', '-l',
         action='store_true',
         help='Mount the source code and run the linter',
+    )
+    parser.add_argument(
+        '--coverage', '-o',
+        action='store_true',
+        help='Generate test coverage statistics',
     )
 
     # Build something

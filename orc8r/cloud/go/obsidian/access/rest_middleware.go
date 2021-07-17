@@ -31,7 +31,6 @@ import (
 // 1) determines request's access type (READ/WRITE)
 // 2) finds Operator & Entities of the request
 // 3) verifies Operator's access permissions for the entities
-
 func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		decorate := getDecorator(c.Request())
@@ -50,8 +49,9 @@ func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		perms := getRequestedPermissions(req, decorate)
-		staticReadOnly := perms == accessprotos.AccessControl_READ && strings.HasPrefix(c.Path(), obsidian.StaticURLPrefix)
-		if !staticReadOnly {
+		isStatic := strings.HasPrefix(c.Path(), obsidian.StaticURLPrefix) || strings.HasPrefix(c.Path(), obsidian.StaticURLPrefixLegacy)
+		isStaticReadOnly := isStatic && perms == accessprotos.AccessControl_READ
+		if !isStaticReadOnly {
 			// Get Request's Entities' Ids
 			ids := FindRequestedIdentities(c)
 
@@ -60,7 +60,7 @@ func Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 			for _, id := range ids {
 				ents = append(ents, &accessprotos.AccessControl_Entity{Id: id, Permissions: perms})
 			}
-			err = accessd.CheckPermissions(operator, ents...)
+			err = accessd.CheckPermissions(c.Request().Context(), operator, ents...)
 			if err != nil {
 				return transformErr(decorate, err, http.StatusForbidden, "access denied (%s)", err)
 			}

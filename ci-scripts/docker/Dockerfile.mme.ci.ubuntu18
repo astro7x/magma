@@ -5,10 +5,8 @@ FROM magma-dev-mme:ci-base-image as magma-mme-builder
 
 ARG FEATURES=mme_oai
 ENV MAGMA_ROOT=/magma
-ENV BUILD_TYPE=Debug
+ENV BUILD_TYPE=RelWithDebInfo
 ENV C_BUILD=/build/c
-ENV TZ=Europe/Paris
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Remove any old CI artifact
 RUN rm -Rf $MAGMA_ROOT $C_BUILD && mkdir -p $C_BUILD
@@ -45,7 +43,9 @@ RUN apt-get update && \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy pre-built shared object files
+COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/liblsan.so.0 /usr/lib/x86_64-linux-gnu/
 COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/libasan.so.3 /usr/lib/x86_64-linux-gnu/
+COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/libubsan.so.0 /usr/lib/x86_64-linux-gnu/
 COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/
 COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/libconfig.so.9 /usr/lib/x86_64-linux-gnu/
 COPY --from=magma-mme-builder /usr/lib/x86_64-linux-gnu/libglog.so.0  /usr/lib/x86_64-linux-gnu/
@@ -95,16 +95,16 @@ RUN ldconfig
 
 # Copy pre-built binaries for MME and SCTPD
 WORKDIR /magma-mme/bin
-COPY --from=magma-mme-builder $C_BUILD/oai/oai_mme/mme oai_mme
-COPY --from=magma-mme-builder $C_BUILD/sctpd/sctpd .
+COPY --from=magma-mme-builder $C_BUILD/core/oai/oai_mme/mme oai_mme
+COPY --from=magma-mme-builder $C_BUILD/sctpd/src/sctpd .
 
 # For the moment, we are not putting any etc/*.conf files
 # We will mount volumes from docker-compose
 
 # Create running dirs
-WORKDIR /var/opt/magma
-WORKDIR /usr/local/etc/redis
-COPY --from=magma-mme-builder $MAGMA_ROOT/lte/gateway/docker/mme/configs/redis_for_container.conf redis.conf
+WORKDIR /var/opt/magma/configs
+# Adding mme configuration for stateful run
+RUN echo "use_stateless: false" > mme.yml
 
 WORKDIR /etc/magma
 COPY --from=magma-mme-builder $MAGMA_ROOT/lte/gateway/configs/control_proxy.yml .
@@ -113,12 +113,18 @@ COPY --from=magma-mme-builder $MAGMA_ROOT/lte/gateway/configs/service_registry.y
 
 # Scripts to re-generate certificates
 WORKDIR /magma-mme/scripts
-COPY --from=magma-mme-builder $MAGMA_ROOT/lte/gateway/c/oai/test/check_mme_s6a_certificate .
-RUN sed -i -e "s@^.*THIS_SCRIPT_PATH@#@" -e "s@\$SUDO@@" check_mme_s6a_certificate
-RUN sed -i -e "s@echo_error@echo@" -e "s@echo_success@echo@" -e "s@echo_warning@echo@" check_mme_s6a_certificate
+COPY --from=magma-mme-builder $MAGMA_ROOT/lte/gateway/c/core/oai/test/check_mme_s6a_certificate .
+RUN sed -i -e "s@^.*THIS_SCRIPT_PATH@#@" \
+           -e "s@\$SUDO@@" \
+           -e "s@echo_error@echo@" \
+           -e "s@echo_success@echo@" \
+           -e "s@echo_warning@echo@" check_mme_s6a_certificate
 
 WORKDIR /magma-mme
 RUN openssl rand -out /root/.rnd 128
+
+# use this label for CI purpose
+LABEL use-separate-hss-realm="true"
 
 # expose ports
 EXPOSE 3870/tcp 5870/tcp 2123/udp

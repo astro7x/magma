@@ -43,6 +43,12 @@ variable "orc8r_route53_zone_id" {
   type        = string
 }
 
+variable "external_dns_deployment_name" {
+  description = "Name of the external dns helm deployment"
+  type        = string
+  default     = "external-dns"
+}
+
 variable "external_dns_role_arn" {
   description = "IAM role ARN for ExternalDNS."
   type        = string
@@ -96,6 +102,11 @@ variable "orc8r_db_name" {
   type        = string
 }
 
+variable "orc8r_db_dialect" {
+  description = "DB dialect for Orchestrator database connection."
+  type        = string
+}
+
 variable "orc8r_db_host" {
   description = "DB hostname for Orchestrator database connection."
   type        = string
@@ -109,21 +120,6 @@ variable "orc8r_db_port" {
 
 variable "orc8r_db_user" {
   description = "DB username for Orchestrator database connection."
-  type        = string
-}
-
-variable "nms_db_name" {
-  description = "DB name for NMS database connection."
-  type        = string
-}
-
-variable "nms_db_host" {
-  description = "DB hostname for NMS database connection."
-  type        = string
-}
-
-variable "nms_db_user" {
-  description = "DB username for NMS database connection."
   type        = string
 }
 
@@ -171,43 +167,49 @@ variable "orc8r_deployment_type" {
 variable "orc8r_chart_version" {
   description = "Version of the core orchestrator Helm chart to install."
   type        = string
-  default     = "1.5.11"
+  default     = "1.5.23"
 }
 
 variable "cwf_orc8r_chart_version" {
   description = "Version of the orchestrator cwf module Helm chart to install."
   type        = string
-  default     = "0.2.0"
+  default     = "0.2.1"
 }
 
 variable "fbinternal_orc8r_chart_version" {
   description = "Version of the orchestrator fbinternal module Helm chart to install."
   type        = string
-  default     = "0.2.0"
+  default     = "0.2.1"
 }
 
 variable "feg_orc8r_chart_version" {
   description = "Version of the orchestrator feg module Helm chart to install."
   type        = string
-  default     = "0.2.1"
+  default     = "0.2.4"
 }
 
 variable "lte_orc8r_chart_version" {
   description = "Version of the orchestrator lte module Helm chart to install."
   type        = string
-  default     = "0.2.1"
+  default     = "0.2.5"
 }
 
 variable "wifi_orc8r_chart_version" {
   description = "Version of the orchestrator wifi module Helm chart to install."
   type        = string
-  default     = "0.2.0"
+  default     = "0.2.1"
 }
 
 variable "orc8r_tag" {
   description = "Image tag for Orchestrator components."
   type        = string
-  default     = ""
+  default     = "1.5.0"
+}
+
+variable "magma_uuid" {
+  description = "UUID to identify Orc8r deployment"
+  type        = string
+  default     = "default"
 }
 
 ##############################################################################
@@ -224,6 +226,18 @@ variable "efs_provisioner_role_arn" {
   type        = string
 }
 
+variable "efs_provisioner_name" {
+  description = "Name of the efs provisioner helm deployment"
+  type        = string
+  default     = "efs-provisioner"
+}
+
+variable "efs_storage_class_name" {
+  description = "Name of the Storage class"
+  type        = string
+  default     = "efs"
+}
+
 ##############################################################################
 # Log aggregation configuration
 ##############################################################################
@@ -232,6 +246,12 @@ variable "elasticsearch_endpoint" {
   description = "Endpoint of the Elasticsearch datasink for aggregated logs and events."
   type        = string
   default     = null
+}
+
+variable "elasticsearch_disk_threshold" {
+  description = "Size threshold in GB."
+  type        = number
+  default     = 10
 }
 
 variable "elasticsearch_retention_days" {
@@ -258,6 +278,18 @@ variable "elasticsearch_curator_log_level" {
   default     = "INFO"
 }
 
+variable "elasticsearch_curator_name" {
+  description = "Name of the elasticsearch-curator helm deployment"
+  type        = string
+  default     = "elasticsearch-curator"
+}
+
+variable "fluentd_deployment_name" {
+  description = "Name of the fluentd helm deployment"
+  type        = string
+  default     = "fluentd"
+}
+
 ##############################################################################
 # Secret configuration and values
 ##############################################################################
@@ -272,24 +304,22 @@ variable "orc8r_db_pass" {
   type        = string
 }
 
-variable "nms_db_pass" {
-  description = "NMS DB password."
-  type        = string
-}
-
 variable "docker_registry" {
   description = "Docker registry to pull Orchestrator containers from."
   type        = string
+  default     = "docker.artifactory.magmacore.org"
 }
 
 variable "docker_user" {
   description = "Docker username to login to registry with."
   type        = string
+  default     = ""
 }
 
 variable "docker_pass" {
   description = "Docker registry password."
   type        = string
+  default     = ""
 }
 
 variable "seed_certs_dir" {
@@ -300,16 +330,19 @@ variable "seed_certs_dir" {
 variable "helm_repo" {
   description = "Helm repository URL for Orchestrator charts."
   type        = string
+  default     = "https://artifactory.magmacore.org/artifactory/helm/"
 }
 
 variable "helm_user" {
   description = "Helm username to login to repository with."
   type        = string
+  default     = ""
 }
 
 variable "helm_pass" {
   description = "Helm repository password."
   type        = string
+  default     = ""
 }
 
 ##############################################################################
@@ -374,27 +407,27 @@ variable "analytics_metrics_prefix" {
 
 variable "analytics_app_secret" {
   description = "App secret for which the metrics is to be exported to"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 
 variable "analytics_app_id" {
   description = "App ID for which the metrics is to be exported to"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "analytics_metric_export_url" {
   description = "Metric Export URL"
-  type = string
-  default = ""
+  type        = string
+  default     = ""
 }
 
 variable "analytics_category_name" {
   description = "Category under which the exported metrics will be placed under"
-  type = string
-  default = "magma"
+  type        = string
+  default     = "magma"
 }
 
 
@@ -412,4 +445,10 @@ variable "alertmanager_configurer_version" {
   description = "Image version for alertmanager configurer."
   type        = string
   default     = "1.0.4"
+}
+
+variable "cloudwatch_exporter_enabled" {
+  description = "Enable cloudwatch exporter"
+  default     = false
+  type        = bool
 }

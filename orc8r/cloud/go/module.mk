@@ -43,15 +43,24 @@ gen::
 #
 # For example
 #	- Before: lte/cloud/go/services/policydb/obsidian/models/swagger.v1.yml
-#	- After: configs/orc8r/swagger_specs/policydb.swagger.v1.yml
+#	- After: orc8r/cloud/swagger/specs/partial/policydb.swagger.v1.yml
 copy_swagger_files:
-	for f in $$(find . -name swagger.v1.yml) ; do cp $$f $${SWAGGER_V1_SPECS_DIR}/$$(echo $$f | sed -r 's/.*\/services\/([^\/]*)\/obsidian\/models\/(swagger\.v1\.yml)/\1.\2/g') ; done
+	for f in $$(find . -name swagger.v1.yml) ; do cp $$f $${SWAGGER_V1_PARTIAL_SPECS_DIR}/$$(echo $$f | sed -r 's/.*\/services\/([^\/]*)\/obsidian\/models\/(swagger\.v1\.yml)/\1.\2/g') ; done
 
 lint:
 	golangci-lint run
 
+swagger_tools:
+	go install magma/orc8r/cloud/go/tools/combine_swagger
+
+ifndef TEST_RESULTS_DIR
+TEST_RESULTS_DIR := $(MAGMA_ROOT)/orc8r/cloud/test-results
+export TEST_RESULTS_DIR
+endif
 test::
-	go test ./...
+	mkdir -p $(TEST_RESULTS_DIR)
+	$(eval NAME ?= $(shell pwd | tr / _))
+	gotestsum --junitfile $(TEST_RESULTS_DIR)/$(NAME).xml
 
 tidy:
 	go mod tidy
@@ -63,13 +72,17 @@ $(TOOL_DEPS): %:
 vet::
 	go vet -composites=false ./...
 
-COVER_FILE=$(COVER_DIR)/$(PLUGIN_NAME).gocov
-cover:
-	go test ./... -coverprofile $(COVER_FILE);
-	# Don't measure coverage for protos and tools
-	sed -i '/\.pb\.go/d; /.*\/tools\/.*/d; /.*_swaggergen\.go/d' $(COVER_FILE);
-	go tool cover -func=$(COVER_FILE)
-
+ifndef COVER_DIR
+COVER_DIR := $(MAGMA_ROOT)/orc8r/cloud/coverage
+export COVER_DIR
+endif
+COVER_FILE=$(COVER_DIR)/$(MODULE_NAME).gocov
+cover: tools cover_pre
+	go-acc ./... --covermode count --output $(COVER_FILE)
+	# Don't measure coverage for tools and generated files
+	awk '!/\.pb\.go|_swaggergen\.go|\/mocks\/|\/tools\/|\/blobstore\/ent\//' $(COVER_FILE) > $(COVER_FILE).tmp && mv $(COVER_FILE).tmp $(COVER_FILE)
+cover_pre:
+	mkdir -p $(COVER_DIR)
 
 # for configurator data migration
 migration_plugin:

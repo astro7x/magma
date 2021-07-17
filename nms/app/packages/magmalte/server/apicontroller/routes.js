@@ -29,6 +29,7 @@ import {intersection} from 'lodash';
 const router: express.Router<FBCNMSRequest, ExpressResponse> = express.Router();
 
 const PROXY_TIMEOUT_MS = 30000;
+const MUTATORS = ['POST', 'PUT', 'DELETE'];
 
 let agent = null;
 if (process.env.HTTPS_PROXY) {
@@ -52,7 +53,11 @@ const PROXY_OPTIONS = {
     req.originalUrl.replace(/^\/nms\/apicontroller/, ''),
 };
 
-export async function networkIdFilter(req: FBCNMSRequest): Promise<boolean> {
+export async function apiFilter(req: FBCNMSRequest): Promise<boolean> {
+  if (req.user.isReadOnlyUser && MUTATORS.includes(req.method)) {
+    return false;
+  }
+
   if (req.organization) {
     const organization = await req.organization();
 
@@ -119,6 +124,15 @@ const proxyErrorHandler = (err, res, next) => {
 };
 
 router.use(
+  /^\/magma\/v1\/feg_lte$/,
+  proxy(API_HOST, {
+    ...PROXY_OPTIONS,
+    userResDecorator: networksResponseDecorator,
+    proxyErrorHandler,
+  }),
+);
+
+router.use(
   /^\/magma\/v1\/networks$/,
   proxy(API_HOST, {
     ...PROXY_OPTIONS,
@@ -131,7 +145,7 @@ router.use(
   '/magma/v1/networks/:networkID',
   proxy(API_HOST, {
     ...PROXY_OPTIONS,
-    filter: networkIdFilter,
+    filter: apiFilter,
     userResDecorator: auditLoggingDecorator,
     proxyErrorHandler,
   }),
@@ -142,7 +156,7 @@ router.use(
   `/magma/v1/:networkType(${networkTypeRegex})/:networkID`,
   proxy(API_HOST, {
     ...PROXY_OPTIONS,
-    filter: networkIdFilter,
+    filter: apiFilter,
     userResDecorator: auditLoggingDecorator,
     proxyErrorHandler,
   }),
@@ -176,7 +190,7 @@ router.use(
   '/magma/v1/events/:networkID',
   proxy(API_HOST, {
     ...PROXY_OPTIONS,
-    filter: networkIdFilter,
+    filter: apiFilter,
     proxyErrorHandler,
   }),
 );
@@ -185,12 +199,16 @@ router.use(
   '/magma/v1/events/:networkID/:streamName',
   proxy(API_HOST, {
     ...PROXY_OPTIONS,
-    filter: networkIdFilter,
+    filter: apiFilter,
     proxyErrorHandler,
   }),
 );
 
 router.use('', (req: FBCNMSRequest, res: ExpressResponse) => {
+  if (req.user.isReadOnlyUser && MUTATORS.includes(req.method)) {
+    res.status(403).send('Mutation forbidden. Readonly access');
+    return;
+  }
   res.status(404).send('Not Found');
 });
 

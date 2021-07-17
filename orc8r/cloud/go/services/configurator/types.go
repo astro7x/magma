@@ -274,6 +274,14 @@ func (ne NetworkEntities) MakeByParentTK() map[storage2.TypeAndKey]NetworkEntiti
 	return ret
 }
 
+func (ne NetworkEntities) TKs() storage2.TKs {
+	var tks storage2.TKs
+	for _, e := range ne {
+		tks = append(tks, e.GetTypeAndKey())
+	}
+	return tks
+}
+
 func (ne NetworkEntities) GetFirst(typ string) (NetworkEntity, error) {
 	for _, e := range ne {
 		if e.Type == typ {
@@ -439,6 +447,15 @@ type EntityLoadCriteria struct {
 
 	LoadAssocsToThis   bool
 	LoadAssocsFromThis bool
+
+	// The following parameters allow for pagination of entity loads. These
+	// load criteria parameters should be used in combination with one another.
+
+	// PageSize is the maximum number of entities returned per load.
+	PageSize uint32
+	// NextPageToken is an opaque token provided to load the next page of
+	// entities.
+	PageToken string
 }
 
 func (elc EntityLoadCriteria) toProto() *storage.EntityLoadCriteria {
@@ -447,6 +464,8 @@ func (elc EntityLoadCriteria) toProto() *storage.EntityLoadCriteria {
 		LoadConfig:         elc.LoadConfig,
 		LoadAssocsToThis:   elc.LoadAssocsToThis,
 		LoadAssocsFromThis: elc.LoadAssocsFromThis,
+		PageSize:           elc.PageSize,
+		PageToken:          elc.PageToken,
 	}
 }
 
@@ -467,6 +486,9 @@ type EntityLoadResult struct {
 	Entities []NetworkEntity
 	// Entities which were not found
 	EntitiesNotFound []storage2.TypeAndKey
+	// NextPageToken is an opaque token provided to load the next page of
+	// entities.
+	NextPageToken string
 }
 
 // EntityWriteOperation is an interface around entity creation/update for the

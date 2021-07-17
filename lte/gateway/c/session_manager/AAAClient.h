@@ -12,10 +12,14 @@
  */
 #pragma once
 
-#include "GRPCReceiver.h"
+#include <feg/gateway/services/aaa/protos/accounting.grpc.pb.h>
+
+#include <memory>
+#include <string>
+
+#include "includes/GRPCReceiver.h"
 #include "SessionState.h"
 #include "SessionStore.h"
-#include <feg/gateway/services/aaa/protos/accounting.grpc.pb.h>
 
 using grpc::Status;
 
@@ -27,10 +31,12 @@ using namespace protos;
  */
 class AAAClient {
  public:
+  virtual ~AAAClient() = default;
+
   virtual bool terminate_session(
       const std::string& radius_session_id, const std::string& imsi) = 0;
 
-  virtual bool add_sessions(magma::lte::SessionMap& session_map) = 0;
+  virtual bool add_sessions(const magma::lte::SessionMap& session_map) = 0;
 };
 
 /**
@@ -41,12 +47,12 @@ class AsyncAAAClient : public magma::GRPCReceiver, public AAAClient {
  public:
   AsyncAAAClient();
 
-  AsyncAAAClient(std::shared_ptr<grpc::Channel> aaa_channel);
+  explicit AsyncAAAClient(std::shared_ptr<grpc::Channel> aaa_channel);
 
   bool terminate_session(
       const std::string& radius_session_id, const std::string& imsi);
 
-  bool add_sessions(magma::lte::SessionMap& session_map);
+  bool add_sessions(const magma::lte::SessionMap& session_map);
 
  private:
   static const uint32_t RESPONSE_TIMEOUT = 6;  // seconds

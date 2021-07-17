@@ -1,11 +1,13 @@
 ---
-name: Bug report
-about: Report a bug
+name: "\U0001F41E  Bug report"
+about: Report a bug or known issue
 title: ''
-labels: bug
+labels: 'type: bug'
 assignees: ''
 
 ---
+
+Prior to submitting an issue, check to see if one has already been created. If there is currently an open issue, add a thumbs-up emoji to identify that it is also affecting you.
 
 ### Your Environment
 

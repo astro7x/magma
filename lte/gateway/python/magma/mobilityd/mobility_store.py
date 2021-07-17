@@ -13,13 +13,14 @@ limitations under the License.
 from collections import defaultdict
 
 import redis
-from magma.common.redis.containers import RedisFlatDict, RedisSet
-from magma.common.redis.serializers import RedisSerde
-from magma.common.redis.containers import RedisHashDict
-from magma.common.redis.serializers import get_json_serializer, \
-    get_json_deserializer
+from lte.protos.mobilityd_pb2 import GWInfo
 from magma.common.redis.client import get_default_client
-
+from magma.common.redis.containers import RedisFlatDict, RedisHashDict, RedisSet
+from magma.common.redis.serializers import (
+    RedisSerde,
+    get_json_deserializer,
+    get_json_serializer,
+)
 from magma.mobilityd import serialize_utils
 from magma.mobilityd.ip_descriptor import IPDesc
 from magma.mobilityd.ip_descriptor_map import IpDescriptorMap
@@ -35,26 +36,36 @@ ALLOCATED_SESSION_PREFIX_TYPE = "mobilityd_allocated_session_prefix"
 
 
 class MobilityStore(object):
-    def __init__(self, client: redis.Redis, persist_to_redis: bool,
-                 redis_port: int):
+    def __init__(
+        self, client: redis.Redis, persist_to_redis: bool,
+        redis_port: int,
+    ):
         self.init_store(client, persist_to_redis, redis_port)
 
-    def init_store(self, client: redis.Redis, persist_to_redis: bool,
-                   redis_port: int):
+    def init_store(
+        self, client: redis.Redis, persist_to_redis: bool,
+        redis_port: int,
+    ):
         if not persist_to_redis:
             self.ip_state_map = IpDescriptorMap(defaultdict(dict))
+            self.ipv6_state_map = IpDescriptorMap(defaultdict(dict))
             self.assigned_ip_blocks = set()  # {ip_block}
             self.sid_ips_map = defaultdict(IPDesc)  # {SID=>IPDesc}
-            self.dhcp_gw_info = UplinkGatewayInfo(defaultdict(str))
+            self.dhcp_gw_info = UplinkGatewayInfo(defaultdict(GWInfo))
             self.dhcp_store = {}  # mac => DHCP_State
             self.allocated_iid = {}  # {ipv6 interface identifiers}
             self.sid_session_prefix_allocated = {}  # SID => session prefix
         else:
             if not redis_port:
                 raise ValueError(
-                    'Must specify a redis_port in mobilityd config.')
+                    'Must specify a redis_port in mobilityd config.',
+                )
             self.ip_state_map = IpDescriptorMap(
-                defaultdict_key(lambda key: ip_states(client, key)))
+                defaultdict_key(lambda key: ip_states(client, key)),
+            )
+            self.ipv6_state_map = IpDescriptorMap(
+                defaultdict_key(lambda key: ip_states(client, key)),
+            )
             self.assigned_ip_blocks = AssignedIpBlocksSet(client)
             self.sid_ips_map = IPDescDict(client)
             self.dhcp_gw_info = UplinkGatewayInfo(GatewayInfoMap())
@@ -75,11 +86,12 @@ class AssignedIpBlocksSet(RedisSet):
 
 class IPDescDict(RedisFlatDict):
     def __init__(self, client):
-        serde = RedisSerde(IPDESC_REDIS_TYPE,
-                           serialize_utils.serialize_ip_desc,
-                           serialize_utils.deserialize_ip_desc,
-                           )
-        super().__init__(client, serde)
+        serde = RedisSerde(
+            IPDESC_REDIS_TYPE,
+            serialize_utils.serialize_ip_desc,
+            serialize_utils.deserialize_ip_desc,
+        )
+        super().__init__(client, serde, writethrough=True)
 
 
 def ip_states(client, key):
@@ -113,8 +125,10 @@ class MacToIP(RedisFlatDict):
 
     def __init__(self):
         client = get_default_client()
-        serde = RedisSerde(MAC_TO_IP_REDIS_TYPE,
-                           get_json_serializer(), get_json_deserializer())
+        serde = RedisSerde(
+            MAC_TO_IP_REDIS_TYPE,
+            get_json_serializer(), get_json_deserializer(),
+        )
         super().__init__(client, serde)
 
     def __missing__(self, key):
@@ -129,8 +143,10 @@ class GatewayInfoMap(RedisFlatDict):
 
     def __init__(self):
         client = get_default_client()
-        serde = RedisSerde(DHCP_GW_INFO_REDIS_TYPE,
-                           get_json_serializer(), get_json_deserializer())
+        serde = RedisSerde(
+            DHCP_GW_INFO_REDIS_TYPE,
+            get_json_serializer(), get_json_deserializer(),
+        )
         super().__init__(client, serde)
 
     def __missing__(self, key):
@@ -146,8 +162,10 @@ class AllocatedIID(RedisFlatDict):
 
     def __init__(self):
         client = get_default_client()
-        serde = RedisSerde(ALLOCATED_IID_REDIS_TYPE,
-                           get_json_serializer(), get_json_deserializer())
+        serde = RedisSerde(
+            ALLOCATED_IID_REDIS_TYPE,
+            get_json_serializer(), get_json_deserializer(),
+        )
         super().__init__(client, serde)
 
     def __missing__(self, key):
@@ -162,8 +180,10 @@ class AllocatedSessionPrefix(RedisFlatDict):
 
     def __init__(self):
         client = get_default_client()
-        serde = RedisSerde(ALLOCATED_SESSION_PREFIX_TYPE,
-                           get_json_serializer(), get_json_deserializer())
+        serde = RedisSerde(
+            ALLOCATED_SESSION_PREFIX_TYPE,
+            get_json_serializer(), get_json_deserializer(),
+        )
         super().__init__(client, serde)
 
     def __missing__(self, key):

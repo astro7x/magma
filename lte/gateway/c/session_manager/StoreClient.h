@@ -12,23 +12,35 @@
  */
 #pragma once
 
-#include <memory>
-
 #include <lte/protos/session_manager.grpc.pb.h>
+
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "SessionState.h"
 
 namespace magma {
 namespace lte {
 
-typedef std::vector<std::unique_ptr<SessionState>> SessionVector;
-typedef std::unordered_map<std::string, SessionVector> SessionMap;
+using SessionVector = std::vector<std::unique_ptr<SessionState>>;
+using SessionMap    = std::unordered_map<std::string, SessionVector>;
 
 /**
  * StoreClient is responsible for reading/writing sessions to/from storage.
  */
 class StoreClient {
  public:
+  virtual ~StoreClient() = default;
+
+  /**
+   * @brief Return a boolean to indicate whether the client is ready to accept
+   * requests
+   */
+  virtual bool is_ready() = 0;
+
   /**
    * Directly read the subscriber's sessions from storage
    *

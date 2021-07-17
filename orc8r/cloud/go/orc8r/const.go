@@ -25,6 +25,7 @@ const (
 	GatewayStateType        = "gw_state"
 	DirectoryRecordType     = "directory_record"
 	StringMapSerdeType      = "string_map"
+	NetworkSentryConfig     = "sentry_config"
 
 	DnsdNetworkType = "dnsd_network"
 
@@ -52,7 +53,7 @@ const (
 	ObsidianHandlersLabel   = "orc8r.io/obsidian_handlers"
 	StateIndexerLabel       = "orc8r.io/state_indexer"
 	StreamProviderLabel     = "orc8r.io/stream_provider"
-	SpecServicerLabel       = "orc8r.io/swagger_spec"
+	SwaggerSpecLabel        = "orc8r.io/swagger_spec"
 
 	ObsidianHandlersPathPrefixesAnnotation = "orc8r.io/obsidian_handlers_path_prefixes"
 	StateIndexerVersionAnnotation          = "orc8r.io/state_indexer_version"
@@ -67,4 +68,11 @@ const (
 	// In dev, this will generally be localhost.
 	// In prod, this will be the relevant pod's IP.
 	ServiceHostnameEnvVar = "SERVICE_HOSTNAME"
+)
+
+// Configs
+const (
+	// SharedService is the name of the pseudo-service that stores shared
+	// configs across all Orc8r services.
+	SharedService = "shared"
 )

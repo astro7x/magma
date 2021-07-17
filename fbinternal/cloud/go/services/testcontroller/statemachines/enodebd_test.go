@@ -110,7 +110,7 @@ func Test_EnodebdE2ETestStateMachine_HappyPath(t *testing.T) {
 	// Check upgrade status, gateway hasn't upgraded yet
 	// ---
 	gatewayRecord := &models2.GatewayDevice{HardwareID: "hw1", Key: &models2.ChallengeKey{KeyType: "ECHO"}}
-	err = device.RegisterDevice("n1", orc8r.AccessGatewayRecordType, "hw1", gatewayRecord, serdes.Device)
+	err = device.RegisterDevice(context.Background(), "n1", orc8r.AccessGatewayRecordType, "hw1", gatewayRecord, serdes.Device)
 	assert.NoError(t, err)
 	ctx := test_utils.GetContextWithCertificate(t, "hw1")
 	test_utils.ReportGatewayStatus(t, ctx, &models2.GatewayStatus{
@@ -861,8 +861,8 @@ func RegisterAGW(t *testing.T) {
 func GetEnodebTestConfig() *models.EnodebdTestConfig {
 	testConfig := &models.EnodebdTestConfig{
 		AgwConfig: &models.AgwTestConfig{
-			PackageRepo:     swag.String("https://packages.magma.etagecom.io"),
-			ReleaseChannel:  swag.String("stretch-beta"),
+			PackageRepo:     swag.String("https://artifactory.magmacore.org/artifactory/debian"),
+			ReleaseChannel:  swag.String("stretch-1.5.0"),
 			SlackWebhook:    swag.String("https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"),
 			TargetGatewayID: swag.String("g1"),
 			TargetTier:      swag.String("t1"),

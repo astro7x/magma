@@ -11,6 +11,9 @@
  * limitations under the License.
  */
 
+#include <sstream>
+#include <string>
+
 #include "EnumToString.h"
 
 namespace magma {
@@ -94,6 +97,8 @@ std::string session_fsm_state_to_str(SessionFsmState state) {
       return "SESSION_CREATING";
     case CREATED:
       return "SESSION_CREATED";
+    case INACTIVE:
+      return "SESSION_INACTIVE";
     default:
       return "INVALID SESSION FSM STATE";
   }
@@ -208,6 +213,24 @@ std::string event_trigger_to_str(EventTrigger event_trigger) {
     default:
       std::ostringstream message;
       message << "UNIMPLEMENTED EVENT TRIGGER: " << event_trigger;
+      return message.str();
+  }
+}
+
+std::string request_origin_type_to_str(
+    RequestOriginType_OriginType request_type) {
+  switch (request_type) {
+    case RequestOriginType_OriginType_GX:
+      return "GX";
+    case RequestOriginType_OriginType_GY:
+      return "GY";
+    case RequestOriginType_OriginType_N4:
+      return "N4";
+    case RequestOriginType_OriginType_WILDCARD:
+      return "WILDCARD";
+    default:
+      std::ostringstream message;
+      message << "Unimplemented RequestOriginType: " << request_type;
       return message.str();
   }
 }

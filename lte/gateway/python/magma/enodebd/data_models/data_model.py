@@ -13,7 +13,8 @@ limitations under the License.
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import List, Dict, Any, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional
+
 from magma.enodebd.data_models.data_model_parameters import ParameterName
 
 TrParam = namedtuple('TrParam', ['path', 'is_invasive', 'type', 'is_optional'])
@@ -52,8 +53,10 @@ class DataModel(ABC):
         if not param_info.is_optional:
             return True
         if param_name not in self._presence_by_param:
-            raise KeyError('Parameter presence not yet marked in data '
-                           'model: %s' % param_name)
+            raise KeyError(
+                'Parameter presence not yet marked in data '
+                'model: %s' % param_name,
+            )
         return self._presence_by_param[param_name]
 
     def set_parameter_presence(

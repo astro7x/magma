@@ -174,37 +174,6 @@ func (LTESubscription_LTEAuthAlgo) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d870e4203d378ec0, []int{3, 1}
 }
 
-type APNConfiguration_PDNType int32
-
-const (
-	APNConfiguration_IPV4         APNConfiguration_PDNType = 0
-	APNConfiguration_IPV6         APNConfiguration_PDNType = 1
-	APNConfiguration_IPV4V6       APNConfiguration_PDNType = 2
-	APNConfiguration_IPV4_OR_IPV6 APNConfiguration_PDNType = 3
-)
-
-var APNConfiguration_PDNType_name = map[int32]string{
-	0: "IPV4",
-	1: "IPV6",
-	2: "IPV4V6",
-	3: "IPV4_OR_IPV6",
-}
-
-var APNConfiguration_PDNType_value = map[string]int32{
-	"IPV4":         0,
-	"IPV6":         1,
-	"IPV4V6":       2,
-	"IPV4_OR_IPV6": 3,
-}
-
-func (x APNConfiguration_PDNType) String() string {
-	return proto.EnumName(APNConfiguration_PDNType_name, int32(x))
-}
-
-func (APNConfiguration_PDNType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{5, 0}
-}
-
 type Non3GPPUserProfile_Non3GPPIPAccess int32
 
 const (
@@ -229,7 +198,7 @@ func (x Non3GPPUserProfile_Non3GPPIPAccess) String() string {
 }
 
 func (Non3GPPUserProfile_Non3GPPIPAccess) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{7, 0}
+	return fileDescriptor_d870e4203d378ec0, []int{6, 0}
 }
 
 type Non3GPPUserProfile_Non3GPPIPAccessAPN int32
@@ -256,7 +225,7 @@ func (x Non3GPPUserProfile_Non3GPPIPAccessAPN) String() string {
 }
 
 func (Non3GPPUserProfile_Non3GPPIPAccessAPN) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{7, 1}
+	return fileDescriptor_d870e4203d378ec0, []int{6, 1}
 }
 
 // --------------------------------------------------------------------------
@@ -558,292 +527,72 @@ func (m *SubscriberState) GetTgppAaaServerRegistered() bool {
 	return false
 }
 
-type APNConfiguration struct {
-	// APN identifier
-	ContextId uint32 `protobuf:"varint,1,opt,name=context_id,json=contextId,proto3" json:"context_id,omitempty"`
-	// Contains either the APN Name or wildcard "*"
-	ServiceSelection string `protobuf:"bytes,2,opt,name=service_selection,json=serviceSelection,proto3" json:"service_selection,omitempty"`
-	// APN QoS profile
-	QosProfile *APNConfiguration_QoSProfile `protobuf:"bytes,3,opt,name=qos_profile,json=qosProfile,proto3" json:"qos_profile,omitempty"`
-	// APN authorized bitrate
-	Ambr *AggregatedMaximumBitrate `protobuf:"bytes,4,opt,name=ambr,proto3" json:"ambr,omitempty"`
-	Pdn  APNConfiguration_PDNType  `protobuf:"varint,5,opt,name=pdn,proto3,enum=magma.lte.APNConfiguration_PDNType" json:"pdn,omitempty"`
-	// Optional static IP to allocate for this subscriber on this APN
-	AssignedStaticIp string `protobuf:"bytes,6,opt,name=assigned_static_ip,json=assignedStaticIp,proto3" json:"assigned_static_ip,omitempty"`
-	// resource is gateway-specific guidance for serving the APN
-	Resource             *APNConfiguration_APNResource `protobuf:"bytes,7,opt,name=resource,proto3" json:"resource,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
-	XXX_unrecognized     []byte                        `json:"-"`
-	XXX_sizecache        int32                         `json:"-"`
+type SubscriberAPNConfig struct {
+	ApnId                uint32   `protobuf:"varint,1,opt,name=apn_id,json=apnId,proto3" json:"apn_id,omitempty"`
+	AssignedStaticIp     string   `protobuf:"bytes,2,opt,name=assigned_static_ip,json=assignedStaticIp,proto3" json:"assigned_static_ip,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *APNConfiguration) Reset()         { *m = APNConfiguration{} }
-func (m *APNConfiguration) String() string { return proto.CompactTextString(m) }
-func (*APNConfiguration) ProtoMessage()    {}
-func (*APNConfiguration) Descriptor() ([]byte, []int) {
+func (m *SubscriberAPNConfig) Reset()         { *m = SubscriberAPNConfig{} }
+func (m *SubscriberAPNConfig) String() string { return proto.CompactTextString(m) }
+func (*SubscriberAPNConfig) ProtoMessage()    {}
+func (*SubscriberAPNConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d870e4203d378ec0, []int{5}
 }
 
-func (m *APNConfiguration) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_APNConfiguration.Unmarshal(m, b)
+func (m *SubscriberAPNConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SubscriberAPNConfig.Unmarshal(m, b)
 }
-func (m *APNConfiguration) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_APNConfiguration.Marshal(b, m, deterministic)
+func (m *SubscriberAPNConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SubscriberAPNConfig.Marshal(b, m, deterministic)
 }
-func (m *APNConfiguration) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_APNConfiguration.Merge(m, src)
+func (m *SubscriberAPNConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SubscriberAPNConfig.Merge(m, src)
 }
-func (m *APNConfiguration) XXX_Size() int {
-	return xxx_messageInfo_APNConfiguration.Size(m)
+func (m *SubscriberAPNConfig) XXX_Size() int {
+	return xxx_messageInfo_SubscriberAPNConfig.Size(m)
 }
-func (m *APNConfiguration) XXX_DiscardUnknown() {
-	xxx_messageInfo_APNConfiguration.DiscardUnknown(m)
+func (m *SubscriberAPNConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_SubscriberAPNConfig.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_APNConfiguration proto.InternalMessageInfo
+var xxx_messageInfo_SubscriberAPNConfig proto.InternalMessageInfo
 
-func (m *APNConfiguration) GetContextId() uint32 {
+func (m *SubscriberAPNConfig) GetApnId() uint32 {
 	if m != nil {
-		return m.ContextId
+		return m.ApnId
 	}
 	return 0
 }
 
-func (m *APNConfiguration) GetServiceSelection() string {
-	if m != nil {
-		return m.ServiceSelection
-	}
-	return ""
-}
-
-func (m *APNConfiguration) GetQosProfile() *APNConfiguration_QoSProfile {
-	if m != nil {
-		return m.QosProfile
-	}
-	return nil
-}
-
-func (m *APNConfiguration) GetAmbr() *AggregatedMaximumBitrate {
-	if m != nil {
-		return m.Ambr
-	}
-	return nil
-}
-
-func (m *APNConfiguration) GetPdn() APNConfiguration_PDNType {
-	if m != nil {
-		return m.Pdn
-	}
-	return APNConfiguration_IPV4
-}
-
-func (m *APNConfiguration) GetAssignedStaticIp() string {
+func (m *SubscriberAPNConfig) GetAssignedStaticIp() string {
 	if m != nil {
 		return m.AssignedStaticIp
 	}
 	return ""
 }
 
-func (m *APNConfiguration) GetResource() *APNConfiguration_APNResource {
-	if m != nil {
-		return m.Resource
-	}
-	return nil
-}
-
-// For details about values see 29.212
-type APNConfiguration_QoSProfile struct {
-	ClassId                 int32    `protobuf:"varint,1,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
-	PriorityLevel           uint32   `protobuf:"varint,2,opt,name=priority_level,json=priorityLevel,proto3" json:"priority_level,omitempty"`
-	PreemptionCapability    bool     `protobuf:"varint,3,opt,name=preemption_capability,json=preemptionCapability,proto3" json:"preemption_capability,omitempty"`
-	PreemptionVulnerability bool     `protobuf:"varint,4,opt,name=preemption_vulnerability,json=preemptionVulnerability,proto3" json:"preemption_vulnerability,omitempty"`
-	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
-	XXX_unrecognized        []byte   `json:"-"`
-	XXX_sizecache           int32    `json:"-"`
-}
-
-func (m *APNConfiguration_QoSProfile) Reset()         { *m = APNConfiguration_QoSProfile{} }
-func (m *APNConfiguration_QoSProfile) String() string { return proto.CompactTextString(m) }
-func (*APNConfiguration_QoSProfile) ProtoMessage()    {}
-func (*APNConfiguration_QoSProfile) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{5, 0}
-}
-
-func (m *APNConfiguration_QoSProfile) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_APNConfiguration_QoSProfile.Unmarshal(m, b)
-}
-func (m *APNConfiguration_QoSProfile) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_APNConfiguration_QoSProfile.Marshal(b, m, deterministic)
-}
-func (m *APNConfiguration_QoSProfile) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_APNConfiguration_QoSProfile.Merge(m, src)
-}
-func (m *APNConfiguration_QoSProfile) XXX_Size() int {
-	return xxx_messageInfo_APNConfiguration_QoSProfile.Size(m)
-}
-func (m *APNConfiguration_QoSProfile) XXX_DiscardUnknown() {
-	xxx_messageInfo_APNConfiguration_QoSProfile.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_APNConfiguration_QoSProfile proto.InternalMessageInfo
-
-func (m *APNConfiguration_QoSProfile) GetClassId() int32 {
-	if m != nil {
-		return m.ClassId
-	}
-	return 0
-}
-
-func (m *APNConfiguration_QoSProfile) GetPriorityLevel() uint32 {
-	if m != nil {
-		return m.PriorityLevel
-	}
-	return 0
-}
-
-func (m *APNConfiguration_QoSProfile) GetPreemptionCapability() bool {
-	if m != nil {
-		return m.PreemptionCapability
-	}
-	return false
-}
-
-func (m *APNConfiguration_QoSProfile) GetPreemptionVulnerability() bool {
-	if m != nil {
-		return m.PreemptionVulnerability
-	}
-	return false
-}
-
-type APNConfiguration_APNResource struct {
-	ApnName              string   `protobuf:"bytes,1,opt,name=apn_name,json=apnName,proto3" json:"apn_name,omitempty"`
-	GatewayIp            string   `protobuf:"bytes,2,opt,name=gateway_ip,json=gatewayIp,proto3" json:"gateway_ip,omitempty"`
-	GatewayMac           string   `protobuf:"bytes,3,opt,name=gateway_mac,json=gatewayMac,proto3" json:"gateway_mac,omitempty"`
-	VlanId               uint32   `protobuf:"varint,4,opt,name=vlan_id,json=vlanId,proto3" json:"vlan_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *APNConfiguration_APNResource) Reset()         { *m = APNConfiguration_APNResource{} }
-func (m *APNConfiguration_APNResource) String() string { return proto.CompactTextString(m) }
-func (*APNConfiguration_APNResource) ProtoMessage()    {}
-func (*APNConfiguration_APNResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{5, 1}
-}
-
-func (m *APNConfiguration_APNResource) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_APNConfiguration_APNResource.Unmarshal(m, b)
-}
-func (m *APNConfiguration_APNResource) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_APNConfiguration_APNResource.Marshal(b, m, deterministic)
-}
-func (m *APNConfiguration_APNResource) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_APNConfiguration_APNResource.Merge(m, src)
-}
-func (m *APNConfiguration_APNResource) XXX_Size() int {
-	return xxx_messageInfo_APNConfiguration_APNResource.Size(m)
-}
-func (m *APNConfiguration_APNResource) XXX_DiscardUnknown() {
-	xxx_messageInfo_APNConfiguration_APNResource.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_APNConfiguration_APNResource proto.InternalMessageInfo
-
-func (m *APNConfiguration_APNResource) GetApnName() string {
-	if m != nil {
-		return m.ApnName
-	}
-	return ""
-}
-
-func (m *APNConfiguration_APNResource) GetGatewayIp() string {
-	if m != nil {
-		return m.GatewayIp
-	}
-	return ""
-}
-
-func (m *APNConfiguration_APNResource) GetGatewayMac() string {
-	if m != nil {
-		return m.GatewayMac
-	}
-	return ""
-}
-
-func (m *APNConfiguration_APNResource) GetVlanId() uint32 {
-	if m != nil {
-		return m.VlanId
-	}
-	return 0
-}
-
-type AggregatedMaximumBitrate struct {
-	// Maximum uplink bitrate
-	MaxBandwidthUl uint32 `protobuf:"varint,1,opt,name=max_bandwidth_ul,json=maxBandwidthUl,proto3" json:"max_bandwidth_ul,omitempty"`
-	// Maximum downlink bitrate
-	MaxBandwidthDl       uint32   `protobuf:"varint,2,opt,name=max_bandwidth_dl,json=maxBandwidthDl,proto3" json:"max_bandwidth_dl,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AggregatedMaximumBitrate) Reset()         { *m = AggregatedMaximumBitrate{} }
-func (m *AggregatedMaximumBitrate) String() string { return proto.CompactTextString(m) }
-func (*AggregatedMaximumBitrate) ProtoMessage()    {}
-func (*AggregatedMaximumBitrate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{6}
-}
-
-func (m *AggregatedMaximumBitrate) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AggregatedMaximumBitrate.Unmarshal(m, b)
-}
-func (m *AggregatedMaximumBitrate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AggregatedMaximumBitrate.Marshal(b, m, deterministic)
-}
-func (m *AggregatedMaximumBitrate) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AggregatedMaximumBitrate.Merge(m, src)
-}
-func (m *AggregatedMaximumBitrate) XXX_Size() int {
-	return xxx_messageInfo_AggregatedMaximumBitrate.Size(m)
-}
-func (m *AggregatedMaximumBitrate) XXX_DiscardUnknown() {
-	xxx_messageInfo_AggregatedMaximumBitrate.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AggregatedMaximumBitrate proto.InternalMessageInfo
-
-func (m *AggregatedMaximumBitrate) GetMaxBandwidthUl() uint32 {
-	if m != nil {
-		return m.MaxBandwidthUl
-	}
-	return 0
-}
-
-func (m *AggregatedMaximumBitrate) GetMaxBandwidthDl() uint32 {
-	if m != nil {
-		return m.MaxBandwidthDl
-	}
-	return 0
-}
-
 type Non3GPPUserProfile struct {
-	Msisdn               string                                `protobuf:"bytes,1,opt,name=msisdn,proto3" json:"msisdn,omitempty"`
-	Non_3GppIpAccess     Non3GPPUserProfile_Non3GPPIPAccess    `protobuf:"varint,2,opt,name=non_3gpp_ip_access,json=non3gppIpAccess,proto3,enum=magma.lte.Non3GPPUserProfile_Non3GPPIPAccess" json:"non_3gpp_ip_access,omitempty"`
-	Non_3GppIpAccessApn  Non3GPPUserProfile_Non3GPPIPAccessAPN `protobuf:"varint,3,opt,name=non_3gpp_ip_access_apn,json=non3gppIpAccessApn,proto3,enum=magma.lte.Non3GPPUserProfile_Non3GPPIPAccessAPN" json:"non_3gpp_ip_access_apn,omitempty"`
-	Ambr                 *AggregatedMaximumBitrate             `protobuf:"bytes,4,opt,name=ambr,proto3" json:"ambr,omitempty"`
-	ApnConfig            []*APNConfiguration                   `protobuf:"bytes,5,rep,name=apn_config,json=apnConfig,proto3" json:"apn_config,omitempty"`
-	AccessNetId          AccessNetworkIdentifier               `protobuf:"varint,6,opt,name=access_net_id,json=accessNetId,proto3,enum=magma.lte.AccessNetworkIdentifier" json:"access_net_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                              `json:"-"`
-	XXX_unrecognized     []byte                                `json:"-"`
-	XXX_sizecache        int32                                 `json:"-"`
+	Msisdn              string                                `protobuf:"bytes,1,opt,name=msisdn,proto3" json:"msisdn,omitempty"`
+	Non_3GppIpAccess    Non3GPPUserProfile_Non3GPPIPAccess    `protobuf:"varint,2,opt,name=non_3gpp_ip_access,json=non3gppIpAccess,proto3,enum=magma.lte.Non3GPPUserProfile_Non3GPPIPAccess" json:"non_3gpp_ip_access,omitempty"`
+	Non_3GppIpAccessApn Non3GPPUserProfile_Non3GPPIPAccessAPN `protobuf:"varint,3,opt,name=non_3gpp_ip_access_apn,json=non3gppIpAccessApn,proto3,enum=magma.lte.Non3GPPUserProfile_Non3GPPIPAccessAPN" json:"non_3gpp_ip_access_apn,omitempty"`
+	Ambr                *AggregatedMaximumBitrate             `protobuf:"bytes,4,opt,name=ambr,proto3" json:"ambr,omitempty"`
+	ApnConfig           []*APNConfiguration                   `protobuf:"bytes,5,rep,name=apn_config,json=apnConfig,proto3" json:"apn_config,omitempty"`
+	AccessNetId         AccessNetworkIdentifier               `protobuf:"varint,6,opt,name=access_net_id,json=accessNetId,proto3,enum=magma.lte.AccessNetworkIdentifier" json:"access_net_id,omitempty"`
+	// subscriber specific APN config
+	SubscriberApnConfig  []*SubscriberAPNConfig `protobuf:"bytes,7,rep,name=subscriber_apn_config,json=subscriberApnConfig,proto3" json:"subscriber_apn_config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
 func (m *Non3GPPUserProfile) Reset()         { *m = Non3GPPUserProfile{} }
 func (m *Non3GPPUserProfile) String() string { return proto.CompactTextString(m) }
 func (*Non3GPPUserProfile) ProtoMessage()    {}
 func (*Non3GPPUserProfile) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{7}
+	return fileDescriptor_d870e4203d378ec0, []int{6}
 }
 
 func (m *Non3GPPUserProfile) XXX_Unmarshal(b []byte) error {
@@ -906,6 +655,13 @@ func (m *Non3GPPUserProfile) GetAccessNetId() AccessNetworkIdentifier {
 	return AccessNetworkIdentifier_HRPD
 }
 
+func (m *Non3GPPUserProfile) GetSubscriberApnConfig() []*SubscriberAPNConfig {
+	if m != nil {
+		return m.SubscriberApnConfig
+	}
+	return nil
+}
+
 // --------------------------------------------------------------------------
 // User subscription record. This record is serialized and stored in the DB.
 // --------------------------------------------------------------------------
@@ -928,7 +684,7 @@ func (m *SubscriberData) Reset()         { *m = SubscriberData{} }
 func (m *SubscriberData) String() string { return proto.CompactTextString(m) }
 func (*SubscriberData) ProtoMessage()    {}
 func (*SubscriberData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{8}
+	return fileDescriptor_d870e4203d378ec0, []int{7}
 }
 
 func (m *SubscriberData) XXX_Unmarshal(b []byte) error {
@@ -1014,7 +770,7 @@ func (m *SubscriberUpdate) Reset()         { *m = SubscriberUpdate{} }
 func (m *SubscriberUpdate) String() string { return proto.CompactTextString(m) }
 func (*SubscriberUpdate) ProtoMessage()    {}
 func (*SubscriberUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d870e4203d378ec0, []int{9}
+	return fileDescriptor_d870e4203d378ec0, []int{8}
 }
 
 func (m *SubscriberUpdate) XXX_Unmarshal(b []byte) error {
@@ -1049,6 +805,414 @@ func (m *SubscriberUpdate) GetMask() *field_mask.FieldMask {
 	return nil
 }
 
+type CheckSubscribersInSyncRequest struct {
+	// flat_digest is the deterministic digest of the full set of subscriber
+	// objects stored on the client side.
+	FlatDigest           *Digest  `protobuf:"bytes,1,opt,name=flat_digest,json=flatDigest,proto3" json:"flat_digest,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CheckSubscribersInSyncRequest) Reset()         { *m = CheckSubscribersInSyncRequest{} }
+func (m *CheckSubscribersInSyncRequest) String() string { return proto.CompactTextString(m) }
+func (*CheckSubscribersInSyncRequest) ProtoMessage()    {}
+func (*CheckSubscribersInSyncRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{9}
+}
+
+func (m *CheckSubscribersInSyncRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CheckSubscribersInSyncRequest.Unmarshal(m, b)
+}
+func (m *CheckSubscribersInSyncRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CheckSubscribersInSyncRequest.Marshal(b, m, deterministic)
+}
+func (m *CheckSubscribersInSyncRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckSubscribersInSyncRequest.Merge(m, src)
+}
+func (m *CheckSubscribersInSyncRequest) XXX_Size() int {
+	return xxx_messageInfo_CheckSubscribersInSyncRequest.Size(m)
+}
+func (m *CheckSubscribersInSyncRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CheckSubscribersInSyncRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CheckSubscribersInSyncRequest proto.InternalMessageInfo
+
+func (m *CheckSubscribersInSyncRequest) GetFlatDigest() *Digest {
+	if m != nil {
+		return m.FlatDigest
+	}
+	return nil
+}
+
+type CheckSubscribersInSyncResponse struct {
+	// in_sync is true if client's existing subscribers match those on the server.
+	InSync               bool     `protobuf:"varint,1,opt,name=in_sync,json=inSync,proto3" json:"in_sync,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CheckSubscribersInSyncResponse) Reset()         { *m = CheckSubscribersInSyncResponse{} }
+func (m *CheckSubscribersInSyncResponse) String() string { return proto.CompactTextString(m) }
+func (*CheckSubscribersInSyncResponse) ProtoMessage()    {}
+func (*CheckSubscribersInSyncResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{10}
+}
+
+func (m *CheckSubscribersInSyncResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CheckSubscribersInSyncResponse.Unmarshal(m, b)
+}
+func (m *CheckSubscribersInSyncResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CheckSubscribersInSyncResponse.Marshal(b, m, deterministic)
+}
+func (m *CheckSubscribersInSyncResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckSubscribersInSyncResponse.Merge(m, src)
+}
+func (m *CheckSubscribersInSyncResponse) XXX_Size() int {
+	return xxx_messageInfo_CheckSubscribersInSyncResponse.Size(m)
+}
+func (m *CheckSubscribersInSyncResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CheckSubscribersInSyncResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CheckSubscribersInSyncResponse proto.InternalMessageInfo
+
+func (m *CheckSubscribersInSyncResponse) GetInSync() bool {
+	if m != nil {
+		return m.InSync
+	}
+	return false
+}
+
+type SyncSubscribersRequest struct {
+	// per_sub_digest is a list of digests for each client-side subscriber, ordered
+	// by their IDs (IMSI).
+	PerSubDigests        []*SubscriberDigestWithID `protobuf:"bytes,1,rep,name=per_sub_digests,json=perSubDigests,proto3" json:"per_sub_digests,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
+	XXX_unrecognized     []byte                    `json:"-"`
+	XXX_sizecache        int32                     `json:"-"`
+}
+
+func (m *SyncSubscribersRequest) Reset()         { *m = SyncSubscribersRequest{} }
+func (m *SyncSubscribersRequest) String() string { return proto.CompactTextString(m) }
+func (*SyncSubscribersRequest) ProtoMessage()    {}
+func (*SyncSubscribersRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{11}
+}
+
+func (m *SyncSubscribersRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SyncSubscribersRequest.Unmarshal(m, b)
+}
+func (m *SyncSubscribersRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SyncSubscribersRequest.Marshal(b, m, deterministic)
+}
+func (m *SyncSubscribersRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SyncSubscribersRequest.Merge(m, src)
+}
+func (m *SyncSubscribersRequest) XXX_Size() int {
+	return xxx_messageInfo_SyncSubscribersRequest.Size(m)
+}
+func (m *SyncSubscribersRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SyncSubscribersRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SyncSubscribersRequest proto.InternalMessageInfo
+
+func (m *SyncSubscribersRequest) GetPerSubDigests() []*SubscriberDigestWithID {
+	if m != nil {
+		return m.PerSubDigests
+	}
+	return nil
+}
+
+type SyncSubscribersResponse struct {
+	// resync is true if the client-server data difference is too big and an
+	// overall resync is needed. If true, all subscriber changesets will be empty.
+	Resync bool `protobuf:"varint,1,opt,name=resync,proto3" json:"resync,omitempty"`
+	// flat_digest is the deterministic digest of all server-side subscribers.
+	FlatDigest *Digest `protobuf:"bytes,2,opt,name=flat_digest,json=flatDigest,proto3" json:"flat_digest,omitempty"`
+	// per_sub_digests is a list of digests for each server-side subscriber, ordered
+	// by their IDs (IMSI).
+	PerSubDigests []*SubscriberDigestWithID `protobuf:"bytes,3,rep,name=per_sub_digests,json=perSubDigests,proto3" json:"per_sub_digests,omitempty"`
+	// to_renew is the set of all subscriber data modified/added on the server side,
+	// indexed by their IDs (IMSI).
+	ToRenew map[string]*SubscriberData `protobuf:"bytes,4,rep,name=to_renew,json=toRenew,proto3" json:"to_renew,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// deleted is a list of IDs for subscribers removed on the server side.
+	Deleted              []string `protobuf:"bytes,5,rep,name=deleted,proto3" json:"deleted,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SyncSubscribersResponse) Reset()         { *m = SyncSubscribersResponse{} }
+func (m *SyncSubscribersResponse) String() string { return proto.CompactTextString(m) }
+func (*SyncSubscribersResponse) ProtoMessage()    {}
+func (*SyncSubscribersResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{12}
+}
+
+func (m *SyncSubscribersResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SyncSubscribersResponse.Unmarshal(m, b)
+}
+func (m *SyncSubscribersResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SyncSubscribersResponse.Marshal(b, m, deterministic)
+}
+func (m *SyncSubscribersResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SyncSubscribersResponse.Merge(m, src)
+}
+func (m *SyncSubscribersResponse) XXX_Size() int {
+	return xxx_messageInfo_SyncSubscribersResponse.Size(m)
+}
+func (m *SyncSubscribersResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SyncSubscribersResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SyncSubscribersResponse proto.InternalMessageInfo
+
+func (m *SyncSubscribersResponse) GetResync() bool {
+	if m != nil {
+		return m.Resync
+	}
+	return false
+}
+
+func (m *SyncSubscribersResponse) GetFlatDigest() *Digest {
+	if m != nil {
+		return m.FlatDigest
+	}
+	return nil
+}
+
+func (m *SyncSubscribersResponse) GetPerSubDigests() []*SubscriberDigestWithID {
+	if m != nil {
+		return m.PerSubDigests
+	}
+	return nil
+}
+
+func (m *SyncSubscribersResponse) GetToRenew() map[string]*SubscriberData {
+	if m != nil {
+		return m.ToRenew
+	}
+	return nil
+}
+
+func (m *SyncSubscribersResponse) GetDeleted() []string {
+	if m != nil {
+		return m.Deleted
+	}
+	return nil
+}
+
+type ListSubscribersRequest struct {
+	// page_size is the maximum number of entities returned per request.
+	PageSize uint32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// page_token is a serialized entity page token for paginated loads.
+	PageToken            string   `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListSubscribersRequest) Reset()         { *m = ListSubscribersRequest{} }
+func (m *ListSubscribersRequest) String() string { return proto.CompactTextString(m) }
+func (*ListSubscribersRequest) ProtoMessage()    {}
+func (*ListSubscribersRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{13}
+}
+
+func (m *ListSubscribersRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListSubscribersRequest.Unmarshal(m, b)
+}
+func (m *ListSubscribersRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListSubscribersRequest.Marshal(b, m, deterministic)
+}
+func (m *ListSubscribersRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListSubscribersRequest.Merge(m, src)
+}
+func (m *ListSubscribersRequest) XXX_Size() int {
+	return xxx_messageInfo_ListSubscribersRequest.Size(m)
+}
+func (m *ListSubscribersRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListSubscribersRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListSubscribersRequest proto.InternalMessageInfo
+
+func (m *ListSubscribersRequest) GetPageSize() uint32 {
+	if m != nil {
+		return m.PageSize
+	}
+	return 0
+}
+
+func (m *ListSubscribersRequest) GetPageToken() string {
+	if m != nil {
+		return m.PageToken
+	}
+	return ""
+}
+
+type ListSubscribersResponse struct {
+	Subscribers []*SubscriberData `protobuf:"bytes,1,rep,name=subscribers,proto3" json:"subscribers,omitempty"`
+	// next_page_token is a serialized entity page token for subsequent paginated
+	// loads.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	// flat_digest is the server-defined, deterministic digest of the full set of
+	// returned subscriber objects.
+	FlatDigest *Digest `protobuf:"bytes,3,opt,name=flat_digest,json=flatDigest,proto3" json:"flat_digest,omitempty"`
+	// per_sub_digests is a set of per-subscriber digests, ordered by their
+	// subscriber IDs.
+	PerSubDigests        []*SubscriberDigestWithID `protobuf:"bytes,4,rep,name=per_sub_digests,json=perSubDigests,proto3" json:"per_sub_digests,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
+	XXX_unrecognized     []byte                    `json:"-"`
+	XXX_sizecache        int32                     `json:"-"`
+}
+
+func (m *ListSubscribersResponse) Reset()         { *m = ListSubscribersResponse{} }
+func (m *ListSubscribersResponse) String() string { return proto.CompactTextString(m) }
+func (*ListSubscribersResponse) ProtoMessage()    {}
+func (*ListSubscribersResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{14}
+}
+
+func (m *ListSubscribersResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListSubscribersResponse.Unmarshal(m, b)
+}
+func (m *ListSubscribersResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListSubscribersResponse.Marshal(b, m, deterministic)
+}
+func (m *ListSubscribersResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListSubscribersResponse.Merge(m, src)
+}
+func (m *ListSubscribersResponse) XXX_Size() int {
+	return xxx_messageInfo_ListSubscribersResponse.Size(m)
+}
+func (m *ListSubscribersResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListSubscribersResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListSubscribersResponse proto.InternalMessageInfo
+
+func (m *ListSubscribersResponse) GetSubscribers() []*SubscriberData {
+	if m != nil {
+		return m.Subscribers
+	}
+	return nil
+}
+
+func (m *ListSubscribersResponse) GetNextPageToken() string {
+	if m != nil {
+		return m.NextPageToken
+	}
+	return ""
+}
+
+func (m *ListSubscribersResponse) GetFlatDigest() *Digest {
+	if m != nil {
+		return m.FlatDigest
+	}
+	return nil
+}
+
+func (m *ListSubscribersResponse) GetPerSubDigests() []*SubscriberDigestWithID {
+	if m != nil {
+		return m.PerSubDigests
+	}
+	return nil
+}
+
+type SubscriberDigestWithID struct {
+	// id is the id of the subscriber.
+	Sid *SubscriberID `protobuf:"bytes,1,opt,name=sid,proto3" json:"sid,omitempty"`
+	// digest is the deterministic digest of the single subscriber data object.
+	Digest               *Digest  `protobuf:"bytes,2,opt,name=digest,proto3" json:"digest,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SubscriberDigestWithID) Reset()         { *m = SubscriberDigestWithID{} }
+func (m *SubscriberDigestWithID) String() string { return proto.CompactTextString(m) }
+func (*SubscriberDigestWithID) ProtoMessage()    {}
+func (*SubscriberDigestWithID) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{15}
+}
+
+func (m *SubscriberDigestWithID) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SubscriberDigestWithID.Unmarshal(m, b)
+}
+func (m *SubscriberDigestWithID) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SubscriberDigestWithID.Marshal(b, m, deterministic)
+}
+func (m *SubscriberDigestWithID) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SubscriberDigestWithID.Merge(m, src)
+}
+func (m *SubscriberDigestWithID) XXX_Size() int {
+	return xxx_messageInfo_SubscriberDigestWithID.Size(m)
+}
+func (m *SubscriberDigestWithID) XXX_DiscardUnknown() {
+	xxx_messageInfo_SubscriberDigestWithID.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SubscriberDigestWithID proto.InternalMessageInfo
+
+func (m *SubscriberDigestWithID) GetSid() *SubscriberID {
+	if m != nil {
+		return m.Sid
+	}
+	return nil
+}
+
+func (m *SubscriberDigestWithID) GetDigest() *Digest {
+	if m != nil {
+		return m.Digest
+	}
+	return nil
+}
+
+type Digest struct {
+	// md5_base64_digest is a base64-encoded MD5 digest of a set of subscriber protos.
+	Md5Base64Digest      string   `protobuf:"bytes,1,opt,name=md5_base64_digest,json=md5Base64Digest,proto3" json:"md5_base64_digest,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Digest) Reset()         { *m = Digest{} }
+func (m *Digest) String() string { return proto.CompactTextString(m) }
+func (*Digest) ProtoMessage()    {}
+func (*Digest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d870e4203d378ec0, []int{16}
+}
+
+func (m *Digest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Digest.Unmarshal(m, b)
+}
+func (m *Digest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Digest.Marshal(b, m, deterministic)
+}
+func (m *Digest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Digest.Merge(m, src)
+}
+func (m *Digest) XXX_Size() int {
+	return xxx_messageInfo_Digest.Size(m)
+}
+func (m *Digest) XXX_DiscardUnknown() {
+	xxx_messageInfo_Digest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Digest proto.InternalMessageInfo
+
+func (m *Digest) GetMd5Base64Digest() string {
+	if m != nil {
+		return m.Md5Base64Digest
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterEnum("magma.lte.AccessNetworkIdentifier", AccessNetworkIdentifier_name, AccessNetworkIdentifier_value)
 	proto.RegisterEnum("magma.lte.SubscriberID_IDType", SubscriberID_IDType_name, SubscriberID_IDType_value)
@@ -1056,7 +1220,6 @@ func init() {
 	proto.RegisterEnum("magma.lte.GSMSubscription_GSMAuthAlgo", GSMSubscription_GSMAuthAlgo_name, GSMSubscription_GSMAuthAlgo_value)
 	proto.RegisterEnum("magma.lte.LTESubscription_LTESubscriptionState", LTESubscription_LTESubscriptionState_name, LTESubscription_LTESubscriptionState_value)
 	proto.RegisterEnum("magma.lte.LTESubscription_LTEAuthAlgo", LTESubscription_LTEAuthAlgo_name, LTESubscription_LTEAuthAlgo_value)
-	proto.RegisterEnum("magma.lte.APNConfiguration_PDNType", APNConfiguration_PDNType_name, APNConfiguration_PDNType_value)
 	proto.RegisterEnum("magma.lte.Non3GPPUserProfile_Non3GPPIPAccess", Non3GPPUserProfile_Non3GPPIPAccess_name, Non3GPPUserProfile_Non3GPPIPAccess_value)
 	proto.RegisterEnum("magma.lte.Non3GPPUserProfile_Non3GPPIPAccessAPN", Non3GPPUserProfile_Non3GPPIPAccessAPN_name, Non3GPPUserProfile_Non3GPPIPAccessAPN_value)
 	proto.RegisterType((*SubscriberID)(nil), "magma.lte.SubscriberID")
@@ -1064,115 +1227,128 @@ func init() {
 	proto.RegisterType((*GSMSubscription)(nil), "magma.lte.GSMSubscription")
 	proto.RegisterType((*LTESubscription)(nil), "magma.lte.LTESubscription")
 	proto.RegisterType((*SubscriberState)(nil), "magma.lte.SubscriberState")
-	proto.RegisterType((*APNConfiguration)(nil), "magma.lte.APNConfiguration")
-	proto.RegisterType((*APNConfiguration_QoSProfile)(nil), "magma.lte.APNConfiguration.QoSProfile")
-	proto.RegisterType((*APNConfiguration_APNResource)(nil), "magma.lte.APNConfiguration.APNResource")
-	proto.RegisterType((*AggregatedMaximumBitrate)(nil), "magma.lte.AggregatedMaximumBitrate")
+	proto.RegisterType((*SubscriberAPNConfig)(nil), "magma.lte.SubscriberAPNConfig")
 	proto.RegisterType((*Non3GPPUserProfile)(nil), "magma.lte.Non3GPPUserProfile")
 	proto.RegisterType((*SubscriberData)(nil), "magma.lte.SubscriberData")
 	proto.RegisterType((*SubscriberUpdate)(nil), "magma.lte.SubscriberUpdate")
+	proto.RegisterType((*CheckSubscribersInSyncRequest)(nil), "magma.lte.CheckSubscribersInSyncRequest")
+	proto.RegisterType((*CheckSubscribersInSyncResponse)(nil), "magma.lte.CheckSubscribersInSyncResponse")
+	proto.RegisterType((*SyncSubscribersRequest)(nil), "magma.lte.SyncSubscribersRequest")
+	proto.RegisterType((*SyncSubscribersResponse)(nil), "magma.lte.SyncSubscribersResponse")
+	proto.RegisterMapType((map[string]*SubscriberData)(nil), "magma.lte.SyncSubscribersResponse.ToRenewEntry")
+	proto.RegisterType((*ListSubscribersRequest)(nil), "magma.lte.ListSubscribersRequest")
+	proto.RegisterType((*ListSubscribersResponse)(nil), "magma.lte.ListSubscribersResponse")
+	proto.RegisterType((*SubscriberDigestWithID)(nil), "magma.lte.SubscriberDigestWithID")
+	proto.RegisterType((*Digest)(nil), "magma.lte.Digest")
 }
 
 func init() { proto.RegisterFile("lte/protos/subscriberdb.proto", fileDescriptor_d870e4203d378ec0) }
 
 var fileDescriptor_d870e4203d378ec0 = []byte{
-	// 1528 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x57, 0xdd, 0x52, 0xdb, 0x48,
-	0x16, 0xf6, 0x1f, 0x06, 0x1f, 0x83, 0x11, 0xbd, 0x24, 0x18, 0xb3, 0x6c, 0xbc, 0x4a, 0xed, 0x2e,
-	0xf9, 0x33, 0x29, 0xb3, 0xc9, 0x66, 0x37, 0x55, 0xbb, 0x2b, 0x63, 0x87, 0xa8, 0xc6, 0x16, 0x9e,
-	0x96, 0x21, 0x53, 0xb9, 0x51, 0xb5, 0xa5, 0xc6, 0x51, 0x21, 0x4b, 0x42, 0x2d, 0x13, 0xb8, 0x9c,
-	0xfb, 0x79, 0x92, 0x79, 0x81, 0xb9, 0x9b, 0x47, 0x98, 0x17, 0x98, 0xfb, 0x79, 0x8d, 0x99, 0xea,
-	0x96, 0x64, 0x84, 0xb1, 0xa9, 0xc9, 0x5c, 0x59, 0x7d, 0xbe, 0xef, 0x9c, 0xee, 0x73, 0xfa, 0xeb,
-	0xee, 0x63, 0xd8, 0x75, 0x42, 0xba, 0xef, 0x07, 0x5e, 0xe8, 0xb1, 0x7d, 0x36, 0x19, 0x32, 0x33,
-	0xb0, 0x87, 0x34, 0xb0, 0x86, 0x0d, 0x61, 0x43, 0xa5, 0x31, 0x19, 0x8d, 0x49, 0xc3, 0x09, 0x69,
-	0x6d, 0xdb, 0x0b, 0xcc, 0x37, 0x41, 0xc2, 0x35, 0xbd, 0xf1, 0xd8, 0x73, 0x23, 0x56, 0xad, 0x3e,
-	0xf2, 0xbc, 0x91, 0x13, 0xc7, 0x19, 0x4e, 0xce, 0xf6, 0xcf, 0x6c, 0xea, 0x58, 0xc6, 0x98, 0xb0,
-	0xf3, 0x88, 0x21, 0x9f, 0xc1, 0xaa, 0x3e, 0x8d, 0xae, 0xb6, 0x51, 0x05, 0x72, 0xb6, 0x55, 0xcd,
-	0xd6, 0xb3, 0x7b, 0x25, 0x9c, 0xb3, 0x2d, 0xd4, 0x84, 0x42, 0x78, 0xed, 0xd3, 0x6a, 0xae, 0x9e,
-	0xdd, 0xab, 0x34, 0xff, 0xd2, 0x98, 0x4e, 0xdb, 0x48, 0xbb, 0x35, 0xd4, 0xf6, 0xe0, 0xda, 0xa7,
-	0x58, 0x70, 0x65, 0x04, 0xc5, 0x68, 0x8c, 0x56, 0xa0, 0xa0, 0xf6, 0x74, 0x55, 0xca, 0xc8, 0xff,
-	0x85, 0xf5, 0xb4, 0x83, 0x4e, 0x43, 0xf4, 0x0c, 0x0a, 0xcc, 0xb6, 0x58, 0x35, 0x5b, 0xcf, 0xef,
-	0x95, 0x9b, 0x5b, 0x0b, 0x42, 0x63, 0x41, 0x92, 0x7f, 0xc8, 0xc1, 0xfa, 0x91, 0xde, 0x8b, 0x11,
-	0x3f, 0xb4, 0x3d, 0x17, 0x75, 0x60, 0x89, 0x85, 0x24, 0xa4, 0x62, 0xb9, 0x95, 0xe6, 0x7e, 0x2a,
-	0xc2, 0x0c, 0x75, 0x76, 0xac, 0x73, 0x37, 0x1c, 0x79, 0xa3, 0x43, 0x28, 0x91, 0x49, 0xf8, 0xc9,
-	0x20, 0xce, 0xc8, 0x8b, 0xf3, 0xfc, 0xfb, 0xfd, 0xa1, 0x94, 0x49, 0xf8, 0x49, 0x71, 0x46, 0x1e,
-	0x5e, 0x21, 0xf1, 0x17, 0xda, 0x06, 0xf1, 0x6d, 0x9c, 0xd3, 0xeb, 0x6a, 0xbe, 0x9e, 0xdd, 0x5b,
-	0xc5, 0xcb, 0x7c, 0xfc, 0x15, 0xbd, 0x46, 0x8f, 0xa0, 0x2c, 0xa0, 0x70, 0xe2, 0x3b, 0x94, 0x55,
-	0x0b, 0xf5, 0xfc, 0xde, 0x2a, 0x06, 0x6e, 0x1a, 0x08, 0x8b, 0xfc, 0x12, 0x36, 0xe7, 0xad, 0x0f,
-	0xad, 0xc2, 0x8a, 0xaa, 0x29, 0x87, 0x03, 0xf5, 0xb4, 0x23, 0x65, 0x10, 0x40, 0x31, 0xfe, 0xce,
-	0xca, 0x4f, 0xa1, 0x9c, 0x5a, 0x06, 0xda, 0x81, 0xad, 0x3e, 0xee, 0x1c, 0x1e, 0xf7, 0xfa, 0x27,
-	0x83, 0x4e, 0xdb, 0x50, 0x4e, 0x06, 0xef, 0x8d, 0xc1, 0x49, 0xbf, 0xdb, 0xd1, 0xa5, 0x8c, 0xfc,
-	0x6b, 0x0e, 0xd6, 0xbb, 0x83, 0xce, 0xef, 0xad, 0xdc, 0x0c, 0x75, 0x76, 0xfc, 0x25, 0x95, 0x9b,
-	0x13, 0xea, 0xcb, 0x2a, 0x97, 0x40, 0x9e, 0x6f, 0x56, 0x0b, 0x37, 0xd0, 0xb1, 0x6f, 0xa2, 0x06,
-	0xfc, 0x89, 0x30, 0x66, 0x8f, 0x5c, 0x6a, 0x19, 0x43, 0xc2, 0xa8, 0xe1, 0x92, 0x31, 0x65, 0x55,
-	0xa8, 0xe7, 0xf7, 0x4a, 0x78, 0x23, 0x81, 0x5a, 0x84, 0x51, 0x8d, 0x03, 0xe8, 0x19, 0x4c, 0x8d,
-	0x86, 0xef, 0x39, 0xb6, 0x69, 0x53, 0x56, 0x2d, 0x0b, 0xb6, 0x94, 0x00, 0xfd, 0xd8, 0xce, 0x37,
-	0x64, 0x5e, 0xda, 0xf7, 0x6c, 0xc8, 0x0e, 0x94, 0x53, 0xd9, 0x71, 0x62, 0x4f, 0xed, 0x76, 0x34,
-	0xe5, 0xa8, 0x23, 0x65, 0xe4, 0xef, 0xb3, 0x69, 0xf1, 0x47, 0xa1, 0x9e, 0xc0, 0x86, 0x13, 0x52,
-	0x43, 0xa4, 0xe7, 0xd2, 0xab, 0xd0, 0x60, 0xf4, 0x42, 0xec, 0x46, 0x01, 0x57, 0x9c, 0x90, 0xf2,
-	0x48, 0x1a, 0xbd, 0x0a, 0x75, 0x7a, 0x81, 0xf6, 0x61, 0x33, 0x1c, 0xf9, 0xbe, 0x41, 0x08, 0x31,
-	0x18, 0x0d, 0x2e, 0x69, 0x20, 0x92, 0x15, 0x05, 0x2f, 0xe1, 0x0d, 0x8e, 0x29, 0x84, 0xe8, 0x02,
-	0xe1, 0xc9, 0xa2, 0xb7, 0x50, 0x9b, 0x75, 0x08, 0xe8, 0xc8, 0x66, 0x21, 0x0d, 0xa8, 0x25, 0x6a,
-	0xbc, 0x82, 0xb7, 0x6e, 0xb9, 0xe1, 0x29, 0x2c, 0x7f, 0x57, 0x04, 0x49, 0xe9, 0x6b, 0x87, 0x9e,
-	0x7b, 0x66, 0x8f, 0x26, 0x01, 0x11, 0x7a, 0xd9, 0x05, 0x30, 0x3d, 0x37, 0xe4, 0xeb, 0x8c, 0x6f,
-	0x87, 0x35, 0x5c, 0x8a, 0x2d, 0xaa, 0xc5, 0x8b, 0xcb, 0xe7, 0xb1, 0x4d, 0x6a, 0x30, 0xea, 0x50,
-	0x93, 0xfb, 0xc4, 0xcb, 0x93, 0x62, 0x40, 0x4f, 0xec, 0xe8, 0x08, 0xca, 0x17, 0x1e, 0x33, 0xfc,
-	0xc0, 0x3b, 0xb3, 0x1d, 0x2a, 0x96, 0x53, 0xbe, 0x25, 0x9b, 0xd9, 0xd9, 0x1b, 0x5f, 0x7b, 0x7a,
-	0x3f, 0x62, 0x63, 0xb8, 0xf0, 0x58, 0xfc, 0x8d, 0xfe, 0x05, 0x05, 0x32, 0x1e, 0x06, 0x42, 0x19,
-	0xe5, 0xe6, 0xe3, 0x74, 0x84, 0xd1, 0x28, 0xa0, 0x23, 0x12, 0x52, 0xab, 0x47, 0xae, 0xec, 0xf1,
-	0x64, 0xdc, 0xb2, 0xc3, 0x80, 0xeb, 0x56, 0x38, 0xa0, 0x57, 0x90, 0xf7, 0x2d, 0xb7, 0xba, 0x24,
-	0x04, 0xfb, 0xf8, 0xbe, 0x99, 0xfb, 0x6d, 0x4d, 0xdc, 0x6b, 0x9c, 0x8f, 0x9e, 0x03, 0x9a, 0x4a,
-	0x88, 0xeb, 0xdf, 0x36, 0x0d, 0xdb, 0xaf, 0x16, 0xa3, 0x34, 0x13, 0x44, 0x17, 0x80, 0xea, 0xa3,
-	0x43, 0x58, 0x09, 0x28, 0xf3, 0x26, 0x81, 0x49, 0xab, 0xcb, 0x62, 0x85, 0xff, 0xb8, 0x6f, 0x26,
-	0xa5, 0xaf, 0xe1, 0x98, 0x8e, 0xa7, 0x8e, 0xb5, 0x1f, 0xb3, 0x00, 0x37, 0xd9, 0xf3, 0xf3, 0x60,
-	0x3a, 0x84, 0xb1, 0x64, 0x13, 0x96, 0xf0, 0xb2, 0x18, 0xab, 0x16, 0xfa, 0x1b, 0x54, 0xfc, 0xc0,
-	0xf6, 0x02, 0x3b, 0xbc, 0x36, 0x1c, 0x7a, 0x49, 0x1d, 0x51, 0xff, 0x35, 0xbc, 0x96, 0x58, 0xbb,
-	0xdc, 0x88, 0x0e, 0xe0, 0x81, 0x1f, 0x50, 0x3a, 0x16, 0xa2, 0x36, 0x4c, 0xe2, 0x93, 0xa1, 0xed,
-	0xd8, 0xe1, 0x75, 0xac, 0x8a, 0xcd, 0x1b, 0xf0, 0x70, 0x8a, 0xa1, 0x7f, 0x43, 0x35, 0xe5, 0x74,
-	0x39, 0x71, 0x5c, 0x1a, 0x24, 0x7e, 0x85, 0x48, 0x4d, 0x37, 0xf8, 0x69, 0x1a, 0xae, 0x7d, 0x9b,
-	0x85, 0x72, 0x2a, 0x35, 0x71, 0xa2, 0x7d, 0x37, 0xd2, 0x6f, 0xf4, 0xc8, 0x2c, 0x13, 0xdf, 0x15,
-	0xaa, 0xdd, 0x05, 0xe0, 0x5b, 0xf6, 0x99, 0x5c, 0xf3, 0xb2, 0x46, 0xea, 0x29, 0xc5, 0x16, 0xd5,
-	0xe7, 0xb7, 0x68, 0x02, 0x8f, 0x89, 0x29, 0xd6, 0x5b, 0xc2, 0x89, 0x47, 0x8f, 0x98, 0x68, 0x0b,
-	0x96, 0x2f, 0x1d, 0xe2, 0xf2, 0xda, 0x14, 0x44, 0xea, 0x45, 0x3e, 0x54, 0x2d, 0xf9, 0x2d, 0x2c,
-	0xc7, 0xfb, 0x28, 0xde, 0xa3, 0xfe, 0xe9, 0x3f, 0xa5, 0x4c, 0xfc, 0xf5, 0x5a, 0xca, 0xf2, 0x63,
-	0xcc, 0x6d, 0xa7, 0xaf, 0xa5, 0x1c, 0x92, 0x60, 0x95, 0x7f, 0x1b, 0xc7, 0xd8, 0x10, 0x68, 0x5e,
-	0x76, 0xa1, 0xba, 0x48, 0x4d, 0x68, 0x0f, 0xa4, 0x31, 0xb9, 0x32, 0x86, 0xc4, 0xb5, 0x3e, 0xdb,
-	0x56, 0xf8, 0xc9, 0x98, 0x38, 0xf1, 0xd9, 0xa8, 0x8c, 0xc9, 0x55, 0x2b, 0x31, 0x9f, 0x38, 0x77,
-	0x99, 0x56, 0xb2, 0x3f, 0xb7, 0x98, 0x6d, 0x47, 0xfe, 0xa9, 0x00, 0x48, 0xf3, 0xdc, 0x83, 0xa3,
-	0x7e, 0xff, 0x84, 0xd1, 0x20, 0xd9, 0xf9, 0x87, 0x50, 0x1c, 0x33, 0x9b, 0x59, 0x6e, 0x5c, 0xb5,
-	0x78, 0x84, 0x3e, 0x02, 0x72, 0x3d, 0xd7, 0x38, 0xe0, 0xc7, 0xdd, 0xf6, 0x0d, 0x62, 0x9a, 0x94,
-	0xb1, 0xf8, 0x2a, 0x7e, 0x91, 0xd2, 0xdb, 0xdd, 0x90, 0x89, 0x49, 0xed, 0x2b, 0xc2, 0x09, 0xaf,
-	0xbb, 0x9e, 0xcb, 0xe3, 0xa8, 0x7e, 0x64, 0x40, 0x16, 0x3c, 0xbc, 0x1b, 0xdb, 0x20, 0xbe, 0x2b,
-	0x8a, 0x5f, 0x69, 0xbe, 0xfc, 0xa2, 0xf8, 0x5c, 0x05, 0x68, 0x66, 0x0a, 0xc5, 0x77, 0xff, 0xf8,
-	0x29, 0xfe, 0x0f, 0x00, 0x97, 0x92, 0x29, 0x8e, 0x51, 0x75, 0x49, 0x34, 0x11, 0x3b, 0xf7, 0x1c,
-	0x31, 0x5c, 0x22, 0xbe, 0x1b, 0x59, 0xd0, 0x3b, 0x58, 0x8b, 0xd3, 0x71, 0xa9, 0xb8, 0xd2, 0x8a,
-	0x22, 0x23, 0x39, 0xed, 0x2e, 0x70, 0x8d, 0x86, 0x9f, 0xbd, 0xe0, 0x5c, 0xb5, 0xa8, 0x1b, 0xda,
-	0x67, 0x36, 0x0d, 0x70, 0x99, 0x24, 0x80, 0x6a, 0xc9, 0xa7, 0xb0, 0x3e, 0x93, 0x26, 0xfa, 0x2b,
-	0xec, 0x6a, 0xc7, 0x9a, 0xc1, 0x6d, 0x86, 0x7e, 0xd2, 0xd2, 0x0f, 0xb1, 0xda, 0x1f, 0xa8, 0xc7,
-	0x9a, 0xa1, 0x74, 0xbb, 0xc7, 0x1f, 0x3a, 0x6d, 0x29, 0x83, 0xea, 0xf0, 0xe7, 0xf9, 0x94, 0x96,
-	0x82, 0x71, 0xa7, 0x2d, 0x65, 0x65, 0x75, 0x2a, 0x82, 0x54, 0xf9, 0x50, 0x15, 0x36, 0xa7, 0x7e,
-	0x4a, 0x5f, 0xd3, 0x8d, 0x8e, 0xa6, 0xb4, 0xba, 0xfc, 0x29, 0xda, 0x86, 0x07, 0xb7, 0x91, 0xb6,
-	0xaa, 0x0b, 0x28, 0x2b, 0xff, 0x9c, 0x83, 0xca, 0xcd, 0xe3, 0xd3, 0x26, 0x21, 0x41, 0x4f, 0x20,
-	0xcf, 0xe2, 0x1b, 0xe4, 0x9e, 0xbe, 0x8b, 0x73, 0xd0, 0x73, 0xc8, 0x8f, 0xd8, 0x58, 0x08, 0xaa,
-	0xdc, 0xac, 0x2d, 0xee, 0x8a, 0x30, 0xa7, 0x71, 0xb6, 0x13, 0x26, 0x57, 0x7a, 0x6d, 0x71, 0x27,
-	0x80, 0x39, 0x0d, 0xbd, 0x02, 0x70, 0xa3, 0xf2, 0x26, 0x67, 0xb6, 0xdc, 0x7c, 0x18, 0x3b, 0x89,
-	0x96, 0xb6, 0x91, 0x54, 0xbf, 0x8d, 0x4b, 0x6e, 0xb2, 0x11, 0xe8, 0x65, 0xd2, 0xbb, 0x2c, 0xdd,
-	0x99, 0x66, 0xe6, 0x91, 0x4d, 0xda, 0x94, 0x47, 0x50, 0x66, 0x93, 0xe1, 0xf4, 0xc5, 0x89, 0x6e,
-	0x6c, 0x60, 0x93, 0x61, 0x72, 0xba, 0xde, 0xc0, 0x4a, 0xa2, 0xf4, 0xf8, 0xae, 0xde, 0xbd, 0x57,
-	0xdb, 0x78, 0x39, 0x16, 0xb2, 0x7c, 0x01, 0xd2, 0xcd, 0xa4, 0x27, 0xbe, 0xc5, 0xa7, 0x7b, 0x01,
-	0x05, 0x8b, 0x84, 0x24, 0xae, 0xef, 0xf6, 0xdc, 0xf5, 0xf1, 0x7d, 0xc0, 0x82, 0x86, 0x1a, 0x50,
-	0xe0, 0xfd, 0xf8, 0xb4, 0xc6, 0x51, 0xcb, 0xde, 0x48, 0x5a, 0xf6, 0xc6, 0x3b, 0xde, 0xb2, 0xf7,
-	0x08, 0x3b, 0xc7, 0x82, 0xf7, 0xf4, 0x1d, 0x6c, 0x2d, 0xd0, 0x26, 0xbf, 0xd4, 0xde, 0xe3, 0x3e,
-	0x97, 0x58, 0x09, 0x96, 0x3e, 0xa8, 0x3d, 0xe5, 0x1b, 0x29, 0xcb, 0x8d, 0x1f, 0xba, 0x8a, 0x26,
-	0xe5, 0x78, 0x57, 0xd2, 0x19, 0xbc, 0xef, 0x60, 0xad, 0x33, 0x90, 0xf2, 0xcd, 0x5f, 0x72, 0xe9,
-	0xd6, 0xbf, 0xdd, 0x42, 0xff, 0x83, 0x35, 0xc5, 0xb2, 0x6e, 0x4c, 0x68, 0xf1, 0xd2, 0x6b, 0x1b,
-	0xb7, 0xf6, 0xe9, 0xd4, 0xb3, 0x2d, 0x39, 0x83, 0xfe, 0x0f, 0x52, 0x9b, 0x3a, 0x34, 0xa4, 0xa9,
-	0x18, 0x8b, 0xe4, 0x35, 0x3f, 0x42, 0x1b, 0xa4, 0xa8, 0x88, 0xa9, 0x08, 0x3b, 0x73, 0x23, 0x44,
-	0xb4, 0xf9, 0x51, 0x54, 0xd8, 0x38, 0xa2, 0xe1, 0x8c, 0xe8, 0x17, 0x2e, 0x64, 0x71, 0x96, 0x72,
-	0x06, 0xb5, 0x60, 0xbd, 0x6b, 0xb3, 0x54, 0x2c, 0x86, 0xee, 0x4e, 0x59, 0xab, 0x2d, 0x88, 0xad,
-	0xd3, 0x50, 0xce, 0xb4, 0x76, 0x3e, 0x6e, 0x0b, 0x78, 0x9f, 0xff, 0xa3, 0x33, 0x1d, 0x6f, 0x62,
-	0xed, 0x8f, 0xbc, 0xf8, 0xef, 0xda, 0xb0, 0x28, 0x7e, 0x0f, 0x7e, 0x0b, 0x00, 0x00, 0xff, 0xff,
-	0xa2, 0x5e, 0x28, 0x70, 0xef, 0x0d, 0x00, 0x00,
+	// 1646 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xdd, 0x72, 0x1a, 0xc9,
+	0x15, 0xe6, 0x4f, 0x08, 0x0e, 0x92, 0x80, 0xb6, 0x8d, 0x10, 0x8a, 0x76, 0xf1, 0xa4, 0x6a, 0x4b,
+	0xf6, 0xee, 0x82, 0x0b, 0xaf, 0x13, 0x67, 0xb7, 0x2a, 0xc9, 0x20, 0xb0, 0x3d, 0x09, 0x42, 0x54,
+	0x0f, 0xb2, 0x53, 0xbe, 0x99, 0x6a, 0x98, 0xd6, 0x78, 0x4a, 0xc3, 0xcc, 0x78, 0xba, 0xd9, 0xb5,
+	0xf6, 0x71, 0x72, 0x99, 0x17, 0xc8, 0x4d, 0xde, 0x24, 0xf7, 0xb9, 0xcb, 0x23, 0xa4, 0xb2, 0xd5,
+	0x3d, 0x33, 0x30, 0x42, 0xc0, 0xda, 0xbe, 0xd2, 0xf4, 0x39, 0xdf, 0xf9, 0xfa, 0xfc, 0xf5, 0xe9,
+	0x46, 0x70, 0xe2, 0x70, 0xda, 0xf6, 0x03, 0x8f, 0x7b, 0xac, 0xcd, 0xe6, 0x13, 0x36, 0x0d, 0xec,
+	0x09, 0x0d, 0xcc, 0x49, 0x4b, 0xca, 0x50, 0x71, 0x46, 0xac, 0x19, 0x69, 0x39, 0x9c, 0x36, 0x8e,
+	0xbc, 0x60, 0xfa, 0x3c, 0x88, 0xb1, 0x53, 0x6f, 0x36, 0xf3, 0xdc, 0x10, 0xd5, 0xb8, 0x9f, 0x20,
+	0x21, 0x7e, 0x2c, 0x6d, 0x5a, 0x9e, 0x67, 0x39, 0x91, 0x62, 0x32, 0xbf, 0x6a, 0x5f, 0xd9, 0xd4,
+	0x31, 0x8d, 0x19, 0x61, 0xd7, 0x21, 0x42, 0xb9, 0x82, 0x3d, 0x7d, 0xb1, 0xa7, 0xd6, 0x43, 0x07,
+	0x90, 0xb1, 0xcd, 0x7a, 0xba, 0x99, 0x3e, 0x2d, 0xe2, 0x8c, 0x6d, 0xa2, 0x0e, 0xe4, 0xf8, 0x8d,
+	0x4f, 0xeb, 0x99, 0x66, 0xfa, 0xf4, 0xa0, 0xf3, 0x45, 0x6b, 0xe1, 0x4c, 0x2b, 0x69, 0xd6, 0xd2,
+	0x7a, 0xe3, 0x1b, 0x9f, 0x62, 0x89, 0x55, 0x10, 0xe4, 0xc3, 0x35, 0x2a, 0x40, 0x4e, 0x3b, 0xd7,
+	0xb5, 0x4a, 0x4a, 0xf9, 0x23, 0x94, 0x93, 0x06, 0x3a, 0xe5, 0xe8, 0x6b, 0xc8, 0x31, 0xdb, 0x64,
+	0xf5, 0x74, 0x33, 0x7b, 0x5a, 0xea, 0x1c, 0x6e, 0xa0, 0xc6, 0x12, 0xa4, 0xfc, 0x33, 0x03, 0xe5,
+	0x97, 0xfa, 0x79, 0xa4, 0xf1, 0xb9, 0xed, 0xb9, 0xa8, 0x0f, 0x3b, 0x8c, 0x13, 0x4e, 0xa5, 0xbb,
+	0x07, 0x9d, 0x76, 0x82, 0x61, 0x05, 0xba, 0xba, 0xd6, 0x85, 0x19, 0x0e, 0xad, 0xd1, 0x19, 0x14,
+	0xc9, 0x9c, 0xbf, 0x33, 0x88, 0x63, 0x79, 0x51, 0x9c, 0x5f, 0x6d, 0xa7, 0x52, 0xe7, 0xfc, 0x9d,
+	0xea, 0x58, 0x1e, 0x2e, 0x90, 0xe8, 0x0b, 0x1d, 0x81, 0xfc, 0x36, 0xae, 0xe9, 0x4d, 0x3d, 0xdb,
+	0x4c, 0x9f, 0xee, 0xe1, 0x5d, 0xb1, 0xfe, 0x2b, 0xbd, 0x41, 0x5f, 0x42, 0x49, 0xaa, 0xf8, 0xdc,
+	0x77, 0x28, 0xab, 0xe7, 0x9a, 0xd9, 0xd3, 0x3d, 0x0c, 0x42, 0x34, 0x96, 0x12, 0xe5, 0x09, 0xdc,
+	0x5f, 0xe7, 0x1f, 0xda, 0x83, 0x82, 0x36, 0x54, 0xcf, 0xc6, 0xda, 0xeb, 0x7e, 0x25, 0x85, 0x00,
+	0xf2, 0xd1, 0x77, 0x5a, 0x79, 0x0c, 0xa5, 0x84, 0x1b, 0xe8, 0x18, 0x0e, 0x47, 0xb8, 0x7f, 0x76,
+	0x71, 0x3e, 0xba, 0x1c, 0xf7, 0x7b, 0x86, 0x7a, 0x39, 0x7e, 0x65, 0x8c, 0x2f, 0x47, 0x83, 0xbe,
+	0x5e, 0x49, 0x29, 0xff, 0xcf, 0x40, 0x79, 0x30, 0xee, 0x7f, 0x6c, 0xe6, 0x56, 0xa0, 0xab, 0xeb,
+	0x4f, 0xc9, 0xdc, 0x1a, 0xaa, 0x4f, 0xcb, 0x5c, 0xac, 0xf2, 0xfc, 0x69, 0x3d, 0xb7, 0x54, 0x5d,
+	0xf8, 0x53, 0xd4, 0x82, 0x7b, 0x84, 0x31, 0xdb, 0x72, 0xa9, 0x69, 0x4c, 0x08, 0xa3, 0x86, 0x4b,
+	0x66, 0x94, 0xd5, 0xa1, 0x99, 0x3d, 0x2d, 0xe2, 0x6a, 0xac, 0xea, 0x12, 0x46, 0x87, 0x42, 0x81,
+	0xbe, 0x86, 0x85, 0xd0, 0xf0, 0x3d, 0xc7, 0x9e, 0xda, 0x94, 0xd5, 0x4b, 0x12, 0x5d, 0x89, 0x15,
+	0xa3, 0x48, 0x2e, 0x0a, 0xb2, 0x2e, 0xec, 0x2d, 0x05, 0x39, 0x86, 0x52, 0x22, 0x3a, 0x01, 0x3c,
+	0xd7, 0x06, 0xfd, 0xa1, 0xfa, 0xb2, 0x5f, 0x49, 0x29, 0xff, 0x48, 0x27, 0x9b, 0x3f, 0xa4, 0x7a,
+	0x04, 0x55, 0x87, 0x53, 0x43, 0x86, 0xe7, 0xd2, 0x0f, 0xdc, 0x60, 0xf4, 0xbd, 0xac, 0x46, 0x0e,
+	0x1f, 0x38, 0x9c, 0x0a, 0xa6, 0x21, 0xfd, 0xc0, 0x75, 0xfa, 0x1e, 0xb5, 0xe1, 0x3e, 0xb7, 0x7c,
+	0xdf, 0x20, 0x84, 0x18, 0x8c, 0x06, 0x3f, 0xd2, 0x40, 0x06, 0x2b, 0x13, 0x5e, 0xc4, 0x55, 0xa1,
+	0x53, 0x09, 0xd1, 0xa5, 0x46, 0x04, 0x8b, 0x7e, 0x80, 0xc6, 0xaa, 0x41, 0x40, 0x2d, 0x9b, 0x71,
+	0x1a, 0x50, 0x53, 0xe6, 0xb8, 0x80, 0x0f, 0x6f, 0x99, 0xe1, 0x85, 0x5a, 0x79, 0x0b, 0xf7, 0x96,
+	0xbe, 0xaa, 0xa3, 0xe1, 0x99, 0xe7, 0x5e, 0xd9, 0x16, 0x7a, 0x00, 0x79, 0xe2, 0xbb, 0x46, 0x34,
+	0x1b, 0xf6, 0xf1, 0x0e, 0xf1, 0x5d, 0xcd, 0x44, 0xdf, 0x00, 0x5a, 0xa4, 0x55, 0xf4, 0x84, 0x3d,
+	0x35, 0x6c, 0x3f, 0xf2, 0x6c, 0x91, 0x57, 0x5d, 0x2a, 0x34, 0x5f, 0xf9, 0xfb, 0x0e, 0xa0, 0xa1,
+	0xe7, 0x3e, 0x7d, 0x39, 0x1a, 0x5d, 0x32, 0x1a, 0x8c, 0x02, 0xef, 0xca, 0x76, 0x28, 0xaa, 0x41,
+	0x7e, 0xc6, 0x6c, 0x66, 0xba, 0xd1, 0xdc, 0x89, 0x56, 0xe8, 0x2d, 0x20, 0xd7, 0x73, 0x8d, 0xa7,
+	0x22, 0x16, 0xdb, 0x37, 0xc8, 0x74, 0x4a, 0x19, 0x8b, 0xfa, 0xec, 0xdb, 0x44, 0x9f, 0xdd, 0xa5,
+	0x8c, 0x45, 0xda, 0x48, 0x95, 0x46, 0xb8, 0xec, 0x7a, 0xae, 0xe0, 0xd1, 0xfc, 0x50, 0x80, 0x4c,
+	0xa8, 0xdd, 0xe5, 0x36, 0x88, 0xef, 0xca, 0xfc, 0x1c, 0x74, 0x9e, 0x7c, 0x12, 0xbf, 0x3a, 0x1a,
+	0x62, 0xb4, 0xb2, 0x85, 0xea, 0xbb, 0xe8, 0xf7, 0x90, 0x23, 0xb3, 0x49, 0x20, 0x9b, 0xb7, 0xd4,
+	0xf9, 0x6d, 0x82, 0x53, 0xb5, 0xac, 0x80, 0x5a, 0x84, 0x53, 0xf3, 0x9c, 0x7c, 0xb0, 0x67, 0xf3,
+	0x59, 0xd7, 0xe6, 0x81, 0x38, 0x5a, 0xd2, 0x00, 0x7d, 0x0f, 0x20, 0xd2, 0x3d, 0x95, 0xc9, 0xaf,
+	0xef, 0xc8, 0x09, 0x79, 0x9c, 0x34, 0x8f, 0x0b, 0x33, 0x0f, 0x88, 0xe8, 0x4f, 0x5c, 0x24, 0xbe,
+	0x1b, 0x95, 0xea, 0x05, 0xec, 0x47, 0xe1, 0xb8, 0x94, 0x8b, 0x8a, 0xe5, 0x65, 0x44, 0x4a, 0xd2,
+	0x5c, 0xea, 0x87, 0x94, 0xff, 0xe4, 0x05, 0xd7, 0x9a, 0x49, 0x5d, 0x6e, 0x5f, 0xd9, 0x34, 0xc0,
+	0x25, 0x12, 0x2b, 0x34, 0x13, 0x61, 0x78, 0xb0, 0xbc, 0x8e, 0x8c, 0x84, 0x3b, 0xbb, 0xd2, 0x9d,
+	0xf5, 0x77, 0xc1, 0xc2, 0x31, 0x7c, 0x6f, 0x69, 0xac, 0xc6, 0xbe, 0x29, 0xaf, 0xa1, 0xbc, 0x92,
+	0x3a, 0xf4, 0x10, 0x4e, 0x86, 0x17, 0x43, 0x43, 0xc8, 0x0c, 0xfd, 0xb2, 0xab, 0x9f, 0x61, 0x6d,
+	0x34, 0xd6, 0x2e, 0x86, 0x86, 0x3a, 0x18, 0x5c, 0xbc, 0xe9, 0xf7, 0x2a, 0x29, 0xd4, 0x84, 0xdf,
+	0xac, 0x87, 0x74, 0x55, 0x8c, 0xfb, 0xbd, 0x4a, 0x5a, 0xd1, 0x16, 0x8d, 0x95, 0x28, 0x09, 0xaa,
+	0xc3, 0xfd, 0x85, 0x9d, 0x3a, 0x1a, 0xea, 0x46, 0x7f, 0xa8, 0x76, 0x07, 0xe2, 0xec, 0x1e, 0xc1,
+	0x83, 0xdb, 0x9a, 0x9e, 0xa6, 0x4b, 0x55, 0x5a, 0xf9, 0x77, 0x06, 0x0e, 0x96, 0xf1, 0xf4, 0x08,
+	0x27, 0xe8, 0x11, 0x64, 0x59, 0xd4, 0xf9, 0x5b, 0x2e, 0x2a, 0x81, 0x41, 0xdf, 0x40, 0xd6, 0x62,
+	0x33, 0xd9, 0xa4, 0xa5, 0x4e, 0x63, 0xf3, 0x35, 0x82, 0x05, 0x4c, 0xa0, 0x1d, 0x4e, 0x65, 0xcb,
+	0xdd, 0x46, 0xaf, 0x8c, 0x1f, 0x2c, 0x60, 0xe8, 0x19, 0x80, 0x1b, 0x96, 0x4c, 0x54, 0x35, 0xec,
+	0xa9, 0x5a, 0x64, 0x24, 0x5f, 0x06, 0xad, 0xb8, 0xa2, 0x3d, 0x5c, 0x74, 0xe3, 0xe2, 0xa2, 0x27,
+	0xf1, 0xb0, 0xdf, 0xb9, 0xb3, 0xcd, 0xca, 0x54, 0x8a, 0xe7, 0xfa, 0x97, 0x50, 0x62, 0xf3, 0x89,
+	0xe1, 0x87, 0xcd, 0x2e, 0xfb, 0xa7, 0x88, 0x81, 0xcd, 0x27, 0xf1, 0x89, 0x7d, 0x0e, 0x85, 0xf8,
+	0xf4, 0xd4, 0x77, 0x25, 0xeb, 0xc9, 0xd6, 0xf3, 0x82, 0x77, 0xa3, 0xc3, 0xa1, 0xbc, 0x87, 0xca,
+	0x72, 0xd3, 0x4b, 0xdf, 0x14, 0xdb, 0x7d, 0x0b, 0x39, 0x93, 0x70, 0x12, 0xe5, 0xf7, 0x68, 0xad,
+	0x7f, 0xa2, 0x0e, 0x58, 0xc2, 0x50, 0x0b, 0x72, 0xe2, 0x01, 0xb3, 0xc8, 0x71, 0xf8, 0xc6, 0x69,
+	0xc5, 0x6f, 0x9c, 0xd6, 0x0b, 0xf1, 0xc6, 0x39, 0x27, 0xec, 0x1a, 0x4b, 0x9c, 0xa2, 0xc3, 0xc9,
+	0xd9, 0x3b, 0x3a, 0xbd, 0x5e, 0x92, 0x31, 0xcd, 0xd5, 0x6f, 0xdc, 0x29, 0xa6, 0xef, 0xe7, 0x94,
+	0x71, 0xd4, 0x81, 0xd2, 0x95, 0x43, 0xb8, 0x61, 0xda, 0x16, 0x65, 0x3c, 0x72, 0xa3, 0x9a, 0x70,
+	0xa3, 0x27, 0x15, 0x18, 0x04, 0x2a, 0xfc, 0x56, 0xfe, 0x00, 0x5f, 0x6c, 0x22, 0x65, 0xbe, 0xe7,
+	0x32, 0x8a, 0x0e, 0x61, 0xd7, 0x76, 0x0d, 0x76, 0xe3, 0x4e, 0x25, 0x63, 0x01, 0xe7, 0x6d, 0x09,
+	0x50, 0xa6, 0x50, 0x13, 0x7f, 0x13, 0x96, 0xb1, 0x23, 0x1a, 0x94, 0x7d, 0x1a, 0x18, 0x22, 0xf7,
+	0xa1, 0x2f, 0xf1, 0xe3, 0xe8, 0xe1, 0xfa, 0x9c, 0x48, 0xcc, 0x1b, 0x9b, 0xbf, 0xd3, 0x7a, 0x78,
+	0xdf, 0xa7, 0x81, 0x3e, 0x9f, 0x84, 0x32, 0xa6, 0xfc, 0x37, 0x03, 0x87, 0x77, 0x76, 0x89, 0x3c,
+	0xab, 0x41, 0x3e, 0xa0, 0x49, 0xc7, 0xc2, 0xd5, 0x6a, 0x1e, 0x32, 0x1f, 0x91, 0x87, 0x75, 0x2e,
+	0x67, 0x3f, 0xcf, 0x65, 0xf4, 0x17, 0x28, 0x70, 0xcf, 0x08, 0xa8, 0x4b, 0x7f, 0x92, 0x8f, 0xa4,
+	0xd2, 0xad, 0x77, 0xc9, 0x86, 0x60, 0x5a, 0x63, 0x0f, 0x0b, 0x8b, 0xbe, 0xcb, 0x83, 0x1b, 0xbc,
+	0xcb, 0xc3, 0x15, 0xaa, 0xc3, 0xae, 0x49, 0x1d, 0xca, 0xa9, 0x29, 0x87, 0x67, 0x11, 0xc7, 0xcb,
+	0xc6, 0x25, 0xec, 0x25, 0x4d, 0x50, 0x05, 0xb2, 0xe2, 0xe5, 0x11, 0xde, 0x3c, 0xe2, 0x13, 0xb5,
+	0x61, 0xe7, 0x47, 0xe2, 0xcc, 0x69, 0x94, 0x80, 0x2d, 0xfd, 0x18, 0xe2, 0xbe, 0xcf, 0x3c, 0x4f,
+	0x2b, 0x63, 0xa8, 0x0d, 0x6c, 0xc6, 0xd7, 0x14, 0xf5, 0x18, 0x8a, 0x3e, 0xb1, 0xa8, 0xc1, 0xec,
+	0x9f, 0x69, 0x74, 0x79, 0x16, 0x84, 0x40, 0xb7, 0x7f, 0xa6, 0xe8, 0x04, 0x40, 0x2a, 0xb9, 0x77,
+	0x4d, 0xdd, 0xe8, 0xde, 0x94, 0xf0, 0xb1, 0x10, 0x28, 0xff, 0x4b, 0xc3, 0xe1, 0x1d, 0xda, 0xa8,
+	0x8a, 0x3f, 0xc8, 0x43, 0x1a, 0x8b, 0xa3, 0x46, 0xd9, 0xe2, 0x6c, 0x12, 0x8d, 0xbe, 0x82, 0xb2,
+	0x7c, 0x75, 0xdc, 0xd9, 0x7c, 0x5f, 0x88, 0x47, 0xb1, 0x03, 0xab, 0x2d, 0x91, 0xfd, 0xcc, 0x96,
+	0xc8, 0x7d, 0x66, 0x17, 0xbb, 0x50, 0x5b, 0x0f, 0xfc, 0x94, 0x91, 0xfc, 0x08, 0xf2, 0xbf, 0xd6,
+	0xd1, 0x11, 0x40, 0xf9, 0x0e, 0xf2, 0x51, 0x10, 0x8f, 0xa1, 0x3a, 0x33, 0x9f, 0xc9, 0xa7, 0xe5,
+	0xef, 0xbe, 0x4b, 0x4e, 0x86, 0x22, 0x2e, 0xcf, 0xcc, 0x67, 0x5d, 0x29, 0x0f, 0xb1, 0x8f, 0x5f,
+	0xc0, 0xe1, 0x86, 0x0b, 0x55, 0xfc, 0x00, 0x7a, 0x85, 0x47, 0xe2, 0x0e, 0x2b, 0xc2, 0xce, 0x1b,
+	0xed, 0x5c, 0xfd, 0x5b, 0x25, 0x2d, 0x84, 0x6f, 0x06, 0xea, 0xb0, 0x92, 0x11, 0xef, 0xc4, 0xfe,
+	0xf8, 0x55, 0x1f, 0x0f, 0xfb, 0xe3, 0x4a, 0xb6, 0xf3, 0x9f, 0x4c, 0xf2, 0xc7, 0x58, 0xaf, 0x8b,
+	0xfe, 0x04, 0xfb, 0xaa, 0x69, 0x2e, 0x45, 0x68, 0x73, 0x79, 0x1b, 0xd5, 0x5b, 0x17, 0xc1, 0x6b,
+	0xcf, 0x36, 0x95, 0x14, 0xfa, 0x33, 0x54, 0x7a, 0xb2, 0xef, 0x13, 0x1c, 0x9b, 0x92, 0xb5, 0x9e,
+	0xa1, 0x07, 0x95, 0x70, 0x4a, 0x27, 0x18, 0x8e, 0xd7, 0x32, 0x84, 0xb0, 0xf5, 0x2c, 0x1a, 0x54,
+	0x5f, 0x52, 0xbe, 0x72, 0xab, 0x6e, 0x74, 0x64, 0x73, 0x94, 0x4a, 0x0a, 0x75, 0xa1, 0xbc, 0x72,
+	0x22, 0xd0, 0xdd, 0x2d, 0x1b, 0x8d, 0x0d, 0xdc, 0x3a, 0xe5, 0x4a, 0xaa, 0xf3, 0xaf, 0x0c, 0x54,
+	0x93, 0x89, 0x3e, 0x73, 0xbc, 0xb9, 0x89, 0x3c, 0xa8, 0xad, 0x1f, 0xe9, 0xe8, 0x34, 0xc1, 0xb6,
+	0xf5, 0x2a, 0x69, 0x3c, 0xfa, 0x08, 0x64, 0x78, 0x7e, 0x95, 0x14, 0x7a, 0x0b, 0xe5, 0x95, 0xa9,
+	0x86, 0x1e, 0x6e, 0x9b, 0x78, 0xe1, 0x16, 0xca, 0xaf, 0x0f, 0xc5, 0x90, 0x7b, 0x35, 0x4d, 0x49,
+	0xee, 0xf5, 0xb3, 0xea, 0x16, 0xf7, 0x86, 0xb9, 0xa3, 0xa4, 0xba, 0xc7, 0x6f, 0x8f, 0x24, 0xac,
+	0xed, 0x70, 0xda, 0x9e, 0x8a, 0xdc, 0xb5, 0x2d, 0x2f, 0xfa, 0xe7, 0xc3, 0x24, 0x2f, 0xff, 0x3e,
+	0xfd, 0x25, 0x00, 0x00, 0xff, 0xff, 0x0f, 0x79, 0xc2, 0xca, 0xd6, 0x10, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1421,6 +1597,160 @@ var _SubscriberDB_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListSubscribers",
 			Handler:    _SubscriberDB_ListSubscribers_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "lte/protos/subscriberdb.proto",
+}
+
+// SubscriberDBCloudClient is the client API for SubscriberDBCloud service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type SubscriberDBCloudClient interface {
+	// CheckSubscribersInSync checks whether the client subscribers flat digest
+	// is up-to-date.
+	CheckSubscribersInSync(ctx context.Context, in *CheckSubscribersInSyncRequest, opts ...grpc.CallOption) (*CheckSubscribersInSyncResponse, error)
+	// SyncSubscribers returns the changeset of subscribers between client and
+	// cloud if the set is small; if the set is large, returns signal to resync.
+	SyncSubscribers(ctx context.Context, in *SyncSubscribersRequest, opts ...grpc.CallOption) (*SyncSubscribersResponse, error)
+	// ListSubscribers lists pages of subscribers stored.
+	ListSubscribers(ctx context.Context, in *ListSubscribersRequest, opts ...grpc.CallOption) (*ListSubscribersResponse, error)
+}
+
+type subscriberDBCloudClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSubscriberDBCloudClient(cc grpc.ClientConnInterface) SubscriberDBCloudClient {
+	return &subscriberDBCloudClient{cc}
+}
+
+func (c *subscriberDBCloudClient) CheckSubscribersInSync(ctx context.Context, in *CheckSubscribersInSyncRequest, opts ...grpc.CallOption) (*CheckSubscribersInSyncResponse, error) {
+	out := new(CheckSubscribersInSyncResponse)
+	err := c.cc.Invoke(ctx, "/magma.lte.SubscriberDBCloud/CheckSubscribersInSync", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriberDBCloudClient) SyncSubscribers(ctx context.Context, in *SyncSubscribersRequest, opts ...grpc.CallOption) (*SyncSubscribersResponse, error) {
+	out := new(SyncSubscribersResponse)
+	err := c.cc.Invoke(ctx, "/magma.lte.SubscriberDBCloud/SyncSubscribers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriberDBCloudClient) ListSubscribers(ctx context.Context, in *ListSubscribersRequest, opts ...grpc.CallOption) (*ListSubscribersResponse, error) {
+	out := new(ListSubscribersResponse)
+	err := c.cc.Invoke(ctx, "/magma.lte.SubscriberDBCloud/ListSubscribers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SubscriberDBCloudServer is the server API for SubscriberDBCloud service.
+type SubscriberDBCloudServer interface {
+	// CheckSubscribersInSync checks whether the client subscribers flat digest
+	// is up-to-date.
+	CheckSubscribersInSync(context.Context, *CheckSubscribersInSyncRequest) (*CheckSubscribersInSyncResponse, error)
+	// SyncSubscribers returns the changeset of subscribers between client and
+	// cloud if the set is small; if the set is large, returns signal to resync.
+	SyncSubscribers(context.Context, *SyncSubscribersRequest) (*SyncSubscribersResponse, error)
+	// ListSubscribers lists pages of subscribers stored.
+	ListSubscribers(context.Context, *ListSubscribersRequest) (*ListSubscribersResponse, error)
+}
+
+// UnimplementedSubscriberDBCloudServer can be embedded to have forward compatible implementations.
+type UnimplementedSubscriberDBCloudServer struct {
+}
+
+func (*UnimplementedSubscriberDBCloudServer) CheckSubscribersInSync(ctx context.Context, req *CheckSubscribersInSyncRequest) (*CheckSubscribersInSyncResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckSubscribersInSync not implemented")
+}
+func (*UnimplementedSubscriberDBCloudServer) SyncSubscribers(ctx context.Context, req *SyncSubscribersRequest) (*SyncSubscribersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncSubscribers not implemented")
+}
+func (*UnimplementedSubscriberDBCloudServer) ListSubscribers(ctx context.Context, req *ListSubscribersRequest) (*ListSubscribersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSubscribers not implemented")
+}
+
+func RegisterSubscriberDBCloudServer(s *grpc.Server, srv SubscriberDBCloudServer) {
+	s.RegisterService(&_SubscriberDBCloud_serviceDesc, srv)
+}
+
+func _SubscriberDBCloud_CheckSubscribersInSync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckSubscribersInSyncRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriberDBCloudServer).CheckSubscribersInSync(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/magma.lte.SubscriberDBCloud/CheckSubscribersInSync",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriberDBCloudServer).CheckSubscribersInSync(ctx, req.(*CheckSubscribersInSyncRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriberDBCloud_SyncSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncSubscribersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriberDBCloudServer).SyncSubscribers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/magma.lte.SubscriberDBCloud/SyncSubscribers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriberDBCloudServer).SyncSubscribers(ctx, req.(*SyncSubscribersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriberDBCloud_ListSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSubscribersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriberDBCloudServer).ListSubscribers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/magma.lte.SubscriberDBCloud/ListSubscribers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriberDBCloudServer).ListSubscribers(ctx, req.(*ListSubscribersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _SubscriberDBCloud_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "magma.lte.SubscriberDBCloud",
+	HandlerType: (*SubscriberDBCloudServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CheckSubscribersInSync",
+			Handler:    _SubscriberDBCloud_CheckSubscribersInSync_Handler,
+		},
+		{
+			MethodName: "SyncSubscribers",
+			Handler:    _SubscriberDBCloud_SyncSubscribers_Handler,
+		},
+		{
+			MethodName: "ListSubscribers",
+			Handler:    _SubscriberDBCloud_ListSubscribers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

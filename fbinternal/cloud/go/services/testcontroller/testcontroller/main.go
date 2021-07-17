@@ -26,6 +26,8 @@ import (
 	"magma/fbinternal/cloud/go/services/testcontroller/statemachines"
 	"magma/fbinternal/cloud/go/services/testcontroller/storage"
 	"magma/orc8r/cloud/go/obsidian"
+	"magma/orc8r/cloud/go/obsidian/swagger"
+	swagger_protos "magma/orc8r/cloud/go/obsidian/swagger/protos"
 	"magma/orc8r/cloud/go/service"
 	"magma/orc8r/cloud/go/sqorc"
 	storage2 "magma/orc8r/cloud/go/storage"
@@ -39,7 +41,7 @@ func main() {
 		glog.Fatalf("Error creating service: %s", err)
 	}
 
-	db, err := sqorc.Open(storage2.SQLDriver, storage2.DatabaseSource)
+	db, err := sqorc.Open(storage2.GetSQLDriver(), storage2.GetDatabaseSource())
 	if err != nil {
 		glog.Fatalf("Failed to connect to database: %s", err)
 	}
@@ -62,6 +64,8 @@ func main() {
 	}
 	e2eServicer := servicers.NewTestControllerServicer(e2eStore)
 	protos.RegisterTestControllerServer(srv.GrpcServer, e2eServicer)
+
+	swagger_protos.RegisterSwaggerSpecServer(srv.GrpcServer, swagger.NewSpecServicerFromFile(testcontroller.ServiceName))
 
 	// Instantiate state machines, start test execution loop
 	go func() {

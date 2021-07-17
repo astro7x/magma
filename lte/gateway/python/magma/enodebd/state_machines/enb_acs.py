@@ -10,16 +10,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from asyncio import BaseEventLoop
-from typing import Type, Any
 from abc import ABC, abstractmethod
+from asyncio import BaseEventLoop
+from typing import Any, Type
+
 from magma.common.service import MagmaService
 from magma.enodebd.data_models.data_model import DataModel
 from magma.enodebd.data_models.data_model_parameters import ParameterName
-from magma.enodebd.device_config.enodeb_config_postprocessor import \
-    EnodebConfigurationPostProcessor
-from magma.enodebd.device_config.enodeb_configuration import \
-    EnodebConfiguration
+from magma.enodebd.device_config.enodeb_config_postprocessor import (
+    EnodebConfigurationPostProcessor,
+)
+from magma.enodebd.device_config.enodeb_configuration import EnodebConfiguration
 from magma.enodebd.devices.device_utils import EnodebDeviceName
 from magma.enodebd.state_machines.acs_state_utils import are_tr069_params_equal
 
@@ -88,8 +89,10 @@ class EnodebAcsStateMachine(ABC):
             params = self.desired_cfg.get_parameter_names_for_object(obj_name)
             for name in params:
                 val1 = self.device_cfg.get_parameter_for_object(name, obj_name)
-                val2 = self.desired_cfg.get_parameter_for_object(name,
-                                                                 obj_name)
+                val2 = self.desired_cfg.get_parameter_for_object(
+                    name,
+                    obj_name,
+                )
                 type_ = self.data_model.get_parameter(name).type
                 if not are_tr069_params_equal(val1, val2, type_):
                     return False
@@ -195,4 +198,3 @@ class EnodebAcsStateMachine(ABC):
     @abstractmethod
     def stop_state_machine(self) -> None:
         pass
-

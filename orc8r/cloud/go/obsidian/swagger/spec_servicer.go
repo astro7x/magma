@@ -15,37 +15,46 @@ package swagger
 
 import (
 	"context"
-	"io/ioutil"
 
 	"magma/orc8r/cloud/go/obsidian/swagger/protos"
-	"magma/orc8r/lib/go/service/config"
+	"magma/orc8r/cloud/go/obsidian/swagger/spec"
 
 	"github.com/golang/glog"
 )
 
 type specServicer struct {
-	spec string
-}
-
-// NewSpecServicerFromFile intializes a spec servicer
-// given a service name.
-func NewSpecServicerFromFile(service string) protos.SwaggerSpecServer {
-	path := config.GetSpecPath(service)
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		// Swallowing ReadFile error because the service should
-		// continue to run even if it can't find its Swagger spec file.
-		glog.Errorf("Error retrieving Swagger Spec of service %s: %+v", service, err)
-		return NewSpecServicer("")
-	}
-	return NewSpecServicer(string(data))
+	partialSpec    string
+	standaloneSpec string
 }
 
 // NewSpecServicer constructs a spec servicer.
-func NewSpecServicer(spec string) protos.SwaggerSpecServer {
-	return &specServicer{spec}
+func NewSpecServicer(partialSpec string, standaloneSpec string) protos.SwaggerSpecServer {
+	return &specServicer{partialSpec: partialSpec, standaloneSpec: standaloneSpec}
 }
 
-func (s *specServicer) GetSpec(ctx context.Context, request *protos.GetSpecRequest) (*protos.GetSpecResponse, error) {
-	return &protos.GetSpecResponse{SwaggerSpec: s.spec}, nil
+func NewSpecServicerWithLoader(specs spec.Loader, service string) protos.SwaggerSpecServer {
+	// Swallow errors because the service should continue to run even if it
+	// can't find its Swagger spec Loader.
+	partial, err := specs.GetPartialSpec(service)
+	if err != nil {
+		glog.Errorf("Error retrieving Swagger partial spec of service %s: %+v", service, err)
+	}
+	standalone, err := specs.GetStandaloneSpec(service)
+	if err != nil {
+		glog.Errorf("Error retrieving Swagger standalone spec of service %s: %+v", service, err)
+	}
+	return NewSpecServicer(partial, standalone)
+}
+
+// NewSpecServicerFromFile initializes a specServicer given a service name.
+func NewSpecServicerFromFile(service string) protos.SwaggerSpecServer {
+	return NewSpecServicerWithLoader(spec.GetDefaultLoader(), service)
+}
+
+func (s *specServicer) GetPartialSpec(ctx context.Context, request *protos.PartialSpecRequest) (*protos.PartialSpecResponse, error) {
+	return &protos.PartialSpecResponse{SwaggerSpec: s.partialSpec}, nil
+}
+
+func (s *specServicer) GetStandaloneSpec(ctx context.Context, request *protos.StandaloneSpecRequest) (*protos.StandaloneSpecResponse, error) {
+	return &protos.StandaloneSpecResponse{SwaggerSpec: s.standaloneSpec}, nil
 }

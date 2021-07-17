@@ -14,8 +14,13 @@ limitations under the License.
 
 from spyne.model import ComplexModel
 from spyne.model.complex import XmlAttribute, XmlData
-from spyne.model.primitive import Boolean, DateTime, Integer, String, \
-    UnsignedInteger
+from spyne.model.primitive import (
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+    UnsignedInteger,
+)
 from spyne.util.odict import odict
 
 # Namespaces
@@ -87,7 +92,8 @@ class Fault(Tr069ComplexModel):
     _type_info["FaultCode"] = UnsignedInteger
     _type_info["FaultString"] = String
     _type_info["SetParameterValuesFault"] = SetParameterValuesFault.customize(
-        max_occurs='unbounded')
+        max_occurs='unbounded',
+    )
 
 
 # Type definitions used in messages
@@ -134,7 +140,8 @@ class ParameterValueStruct(Tr069ComplexModel):
 class ParameterValueList(Tr069ComplexModel):
     _type_info = odict()
     _type_info["ParameterValueStruct"] = ParameterValueStruct.customize(
-        max_occurs='unbounded')
+        max_occurs='unbounded',
+    )
     _type_info["arrayType"] = XmlAttribute(String, ns=SOAP_ENC)
 
 
@@ -178,7 +185,8 @@ class SetParameterAttributesStruct(Tr069ComplexModel):
 class SetParameterAttributesList(Tr069ComplexModel):
     _type_info = odict()
     _type_info["SetParameterAttributesStruct"] = SetParameterAttributesStruct.customize(
-        max_occurs='unbounded')
+        max_occurs='unbounded',
+    )
     _type_info["arrayType"] = XmlAttribute(String, ns=SOAP_ENC)
 
 
@@ -192,7 +200,8 @@ class ParameterAttributeStruct(Tr069ComplexModel):
 class ParameterAttributeList(Tr069ComplexModel):
     _type_info = odict()
     _type_info["ParameterValueStruct"] = ParameterAttributeStruct.customize(
-        max_occurs='unbounded')
+        max_occurs='unbounded',
+    )
     _type_info["arrayType"] = XmlAttribute(String, ns=SOAP_ENC)
 
 
@@ -372,7 +381,8 @@ class ParameterListUnion(Tr069ComplexModel):
 
     # Fields from ParameterValueList
     _type_info["ParameterValueStruct"] = ParameterValueStruct.customize(
-        max_occurs='unbounded')
+        max_occurs='unbounded',
+    )
     _type_info["arrayType"] = XmlAttribute(String, ns=SOAP_ENC)
 
     # Fields from SetParameterAttributesList

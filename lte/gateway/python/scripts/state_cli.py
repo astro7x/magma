@@ -12,24 +12,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import fire
-import json
-import jsonpickle
-import random
 import ast
+import json
+import random
+from json.decoder import JSONDecodeError
 from typing import Union
 
-from magma.common.redis.client import get_default_client
-from magma.common.redis.serializers import get_json_deserializer, \
-    get_proto_deserializer
-from magma.mobilityd.serialize_utils import deserialize_ip_block, \
-    deserialize_ip_desc
-
+import fire
+import jsonpickle
 from lte.protos.keyval_pb2 import IPDesc
-from lte.protos.policydb_pb2 import PolicyRule, InstalledPolicies
 from lte.protos.oai.mme_nas_state_pb2 import MmeNasState, UeContext
-from lte.protos.oai.spgw_state_pb2 import SpgwState, S11BearerContext
-from lte.protos.oai.s1ap_state_pb2 import S1apState, UeDescription
+from lte.protos.oai.s1ap_state_pb2 import S1apImsiMap, S1apState, UeDescription
+from lte.protos.oai.spgw_state_pb2 import SpgwState, SpgwUeContext
+from lte.protos.policydb_pb2 import InstalledPolicies, PolicyRule
+from magma.common.redis.client import get_default_client
+from magma.common.redis.serializers import (
+    get_json_deserializer,
+    get_proto_deserializer,
+    get_proto_version_deserializer,
+)
+from magma.mobilityd.serialize_utils import (
+    deserialize_ip_block,
+    deserialize_ip_desc,
+)
 
 NO_DESERIAL_MSG = "No deserializer exists for type '{}'"
 
@@ -45,7 +50,8 @@ def _deserialize_session_json(serialized_json_str: bytes) -> str:
 
 
 def _deserialize_generic_json(
-        element: Union[str, dict, list])-> Union[str, dict, list]:
+        element: Union[str, dict, list],
+) -> Union[str, dict, list]:
     """
     Helper function to deserialize dictionaries or list with nested
     json strings
@@ -94,8 +100,9 @@ class StateCLI(object):
         'mme_nas_state': MmeNasState,
         'spgw_state': SpgwState,
         's1ap_state': S1apState,
+        's1ap_imsi_map': S1apImsiMap,
         'mme': UeContext,
-        'spgw': S11BearerContext,
+        'spgw': SpgwUeContext,
         's1ap': UeDescription,
         'mobilityd_ipdesc_record': IPDesc,
         'rules': PolicyRule,
@@ -145,7 +152,7 @@ class StateCLI(object):
             # Try parsing as json first, if there's decoding error, parse proto
             try:
                 self._parse_state_json(value)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, JSONDecodeError, AttributeError):
                 self._parse_state_proto(key_type, value)
 
     def corrupt(self, key):
@@ -174,7 +181,10 @@ class StateCLI(object):
         proto = self.STATE_PROTOS.get(key_type.lower())
         if proto:
             deserializer = get_proto_deserializer(proto)
+            version_deserializer = get_proto_version_deserializer()
             print(deserializer(value))
+            print('==================')
+            print('State version: %s' % version_deserializer(value))
         else:
             raise AttributeError('Key not found on redis')
 

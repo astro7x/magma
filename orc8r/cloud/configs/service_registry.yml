@@ -47,7 +47,6 @@ services:
       orc8r.io/obsidian_handlers_path_prefixes: >
         /,
         /magma/v1/channels,
-        /magma/v1/events,
         /magma/v1/networks,
         /magma/v1/networks/:network_id,
 
@@ -76,6 +75,8 @@ services:
     host: "localhost"
     port: 9086
     proxy_type: "internal"
+    labels:
+      orc8r.io/analytics_collector: "true"
 
   bootstrapper:
     host: "localhost"
@@ -86,6 +87,19 @@ services:
     host: "localhost"
     port: 9091
     proxy_type: "clientcert"
+
+  eventd:
+    host: "localhost"
+    port: 9121
+    echo_port: 10121
+    proxy_type: "clientcert"
+    labels:
+      orc8r.io/obsidian_handlers: "true"
+      orc8r.io/swagger_spec: "true"
+    annotations:
+      orc8r.io/obsidian_handlers_path_prefixes: >
+        /magma/v1/networks/:network_id/logs,
+        /magma/v1/events,
 
   obsidian:
     host: "localhost"

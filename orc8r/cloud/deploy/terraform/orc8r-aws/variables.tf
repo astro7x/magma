@@ -34,6 +34,19 @@ variable "deploy_elasticsearch_service_linked_role" {
   default     = true
 }
 
+
+variable "enable_aws_db_notifications" {
+  description = "Flag to enable AWS RDS notifications"
+  type        = bool
+  default     = false
+}
+
+variable "magma_uuid" {
+  description = "UUID to identify Orc8r deployment"
+  type        = string
+  default     = "default"
+}
+
 variable "global_tags" {
   default = {}
 }
@@ -236,53 +249,33 @@ variable "orc8r_db_password" {
 variable "orc8r_db_engine_version" {
   description = "Postgres engine version for Orchestrator DB."
   type        = string
-  default     = "9.6.15"
+  default     = "12.6"
 }
 
-##############################################################################
-# NMS DB Specs
-##############################################################################
-
-variable "nms_db_identifier" {
-  description = "Identifier for the RDS instance for NMS."
+variable "orc8r_db_dialect" {
+  description = "Database dialect for Orchestrator DB."
   type        = string
-  default     = "nmsdb"
+  default     = "postgres"
 }
 
-variable "nms_db_storage_gb" {
-  description = "Capacity in GB to allocate for NMS RDS instance."
+variable "orc8r_db_backup_retention" {
+  description = "Database backup retention period"
   type        = number
-  default     = 16
+  default     = 7
 }
 
-variable "nms_db_instance_class" {
-  description = "RDS instance type for NMS DB."
+variable "orc8r_db_backup_window" {
+  description = "Database daily backup window in UTC with a 30-minute minimum"
   type        = string
-  default     = "db.m4.large"
+  default     = "01:00-01:30"
 }
 
-variable "nms_db_name" {
-  description = "DB name for NMS RDS instance."
+variable "orc8r_db_event_subscription" {
+  description = "Database event subscription"
   type        = string
-  default     = "magma"
+  default     = "orc8r-rds-events"
 }
 
-variable "nms_db_username" {
-  description = "Username for default DB user for NMS DB."
-  type        = string
-  default     = "magma"
-}
-
-variable "nms_db_password" {
-  description = "Password for the NMS DB. Must be at least 8 characters."
-  type        = string
-}
-
-variable "nms_db_engine_version" {
-  description = "MySQL engine version for NMS DB."
-  type        = string
-  default     = "5.7"
-}
 
 ##############################################################################
 # Secretmanager configuration
@@ -375,6 +368,22 @@ variable "elasticsearch_domain_tags" {
 
 variable "thanos_enabled" {
   description = "Enable thanos infrastructure"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
+}
+
+##############################################################################
+# Simple Notification Service (SNS) configuration
+##############################################################################
+
+variable "orc8r_sns_name" {
+  description = "SNS for Orc8r to redirect alerts and notifications"
+  type        = string
+  default     = "orc8r-sns"
+  }
+
+variable "orc8r_sns_email" {
+  description = "SNS email endpoint to send notifications"
+  type        = string
+  default     = ""
 }

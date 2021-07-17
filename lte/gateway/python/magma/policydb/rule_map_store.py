@@ -14,8 +14,10 @@ limitations under the License.
 from lte.protos.policydb_pb2 import InstalledPolicies
 from magma.common.redis.client import get_default_client
 from magma.common.redis.containers import RedisHashDict
-from magma.common.redis.serializers import get_proto_deserializer, \
-    get_proto_serializer
+from magma.common.redis.serializers import (
+    get_proto_deserializer,
+    get_proto_serializer,
+)
 
 
 class RuleAssignmentsDict(RedisHashDict):
@@ -32,7 +34,7 @@ class RuleAssignmentsDict(RedisHashDict):
             client,
             self._DICT_HASH,
             get_proto_serializer(),
-            get_proto_deserializer(InstalledPolicies)
+            get_proto_deserializer(InstalledPolicies),
         )
         # TODO: Remove when sessiond becomes stateless
         self._clear()

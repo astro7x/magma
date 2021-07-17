@@ -13,11 +13,14 @@
 #pragma once
 
 #include <future>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "AAAClient.h"
-#include "SessionReporter.h"
 #include "DirectorydClient.h"
 #include "LocalEnforcer.h"
+#include "SessionReporter.h"
 
 namespace magma {
 namespace sessiond {
@@ -28,7 +31,7 @@ namespace sessiond {
 class RestartHandler {
  public:
   RestartHandler(
-      std::shared_ptr<AsyncDirectorydClient> directoryd_client,
+      std::shared_ptr<DirectorydClient> directoryd_client,
       std::shared_ptr<aaa::AsyncAAAClient> aaa_client,
       std::shared_ptr<LocalEnforcer> enforcer, SessionReporter* reporter,
       SessionStore& session_store);
@@ -50,7 +53,7 @@ class RestartHandler {
   bool launch_threads_to_terminate_with_retries();
 
  private:
-  std::shared_ptr<AsyncDirectorydClient> directoryd_client_;
+  std::shared_ptr<DirectorydClient> directoryd_client_;
   std::shared_ptr<aaa::AsyncAAAClient> aaa_client_;
   std::shared_ptr<LocalEnforcer> enforcer_;
   SessionReporter* reporter_;

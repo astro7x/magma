@@ -32,8 +32,8 @@ controller:
   spec:
     # Postgres/mysql configuration
     database:
-      driver: postgres      # mysql/postgres
-      sql_dialect: psql # maria/psql
+      driver: postgres   # mysql/postgres
+      sql_dialect: psql  # maria/psql
       db: magma          # DB Name
       protocol: tcp
       host: postgresql
@@ -41,7 +41,7 @@ controller:
       user: postgres
       pass: postgres
     service_registry:
-      mode: "yaml"
+      mode: "k8s"
 
   podAnnotations: {}
 
@@ -128,6 +128,7 @@ subscriberdb:
         /magma/v1/lte/:network_id/msisdns,
         /magma/v1/lte/:network_id/subscriber_state,
         /magma/v1/lte/:network_id/subscribers,
+        /magma/v1/lte/:network_id/subscribers_v2,
 
 smsd:
   service:
@@ -136,3 +137,17 @@ smsd:
       orc8r.io/swagger_spec: "true"
     annotations:
       orc8r.io/obsidian_handlers_path_prefixes: "/magma/v1/lte/:network_id/sms"
+
+subscriberdb_cache:
+  service:
+    labels: {}
+    annotations: {}
+
+nprobe:
+  service:
+    labels:
+      orc8r.io/obsidian_handlers: "true"
+      orc8r.io/swagger_spec: "true"
+    annotations:
+      orc8r.io/obsidian_handlers_path_prefixes: >
+        /magma/v1/lte/:network_id/network_probe,

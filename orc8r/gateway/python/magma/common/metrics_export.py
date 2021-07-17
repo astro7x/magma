@@ -111,11 +111,13 @@ def encode_summary(family, timestamp_ms):
     metric_protos = {}
     # Build a map of each of the summary timeseries from the samples
     for sample in family.samples:
-        quantile = sample[1].pop('quantile', None) # Remove from label set
+        quantile = sample[1].pop('quantile', None)  # Remove from label set
         # Each time series identified by label set excluding the quantile
         metric_proto = \
-            metric_protos.setdefault(frozenset(sample[1].items()),
-                                     metrics_pb2.Metric())
+            metric_protos.setdefault(
+                frozenset(sample[1].items()),
+                metrics_pb2.Metric(),
+            )
         if sample[0].endswith('_count'):
             metric_proto.summary.sample_count = int(sample[2])
         elif sample[0].endswith('_sum'):
@@ -157,10 +159,12 @@ def encode_histogram(family, timestamp_ms):
     family_proto.type = metrics_pb2.HISTOGRAM
     metric_protos = {}
     for sample in family.samples:
-        upper_bound = sample[1].pop('le', None) # Remove from label set
+        upper_bound = sample[1].pop('le', None)  # Remove from label set
         metric_proto = \
-            metric_protos.setdefault(frozenset(sample[1].items()),
-                                     metrics_pb2.Metric())
+            metric_protos.setdefault(
+                frozenset(sample[1].items()),
+                metrics_pb2.Metric(),
+            )
         if sample[0].endswith('_count'):
             metric_proto.histogram.sample_count = int(sample[2])
         elif sample[0].endswith('_sum'):

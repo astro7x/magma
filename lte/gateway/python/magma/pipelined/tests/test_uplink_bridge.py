@@ -10,27 +10,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import subprocess
 import unittest
 import warnings
 from concurrent.futures import Future
-import logging
-from ryu.lib import hub
 
-from magma.pipelined.tests.app.start_pipelined import (
-    TestSetup,
-    PipelinedController,
-)
 from magma.pipelined.bridge_util import BridgeTools
+from magma.pipelined.tests.app.start_pipelined import (
+    PipelinedController,
+    TestSetup,
+)
 from magma.pipelined.tests.pipelined_test_util import (
+    assert_bridge_snapshot_match,
+    create_service_manager,
+    get_iface_gw_ipv4,
+    get_iface_ipv4,
+    get_ovsdb_port_tag,
     start_ryu_app_thread,
     stop_ryu_app_thread,
-    create_service_manager,
-    assert_bridge_snapshot_match,
-    get_ovsdb_port_tag,
-    get_iface_ipv4,
-    get_iface_gw_ipv4,
 )
+from ryu.lib import hub
 
 
 class UplinkBridgeTest(unittest.TestCase):
@@ -56,9 +56,11 @@ class UplinkBridgeTest(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -125,9 +127,11 @@ class UplinkBridgeWithNonNATTest(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -162,23 +166,35 @@ class UplinkBridgeWithNonNATTest(unittest.TestCase):
         BridgeTools.create_bridge(cls.BRIDGE, cls.BRIDGE)
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
 
-        BridgeTools.create_veth_pair(cls.VLAN_DEV_IN,
-                                     cls.VLAN_DEV_OUT)
+        BridgeTools.create_veth_pair(
+            cls.VLAN_DEV_IN,
+            cls.VLAN_DEV_OUT,
+        )
         # Add to OVS,
-        BridgeTools.add_ovs_port(cls.UPLINK_BRIDGE,
-                                 cls.VLAN_DEV_IN, "70")
-        BridgeTools.add_ovs_port(cls.UPLINK_BRIDGE,
-                                 cls.VLAN_DEV_OUT, "71")
+        BridgeTools.add_ovs_port(
+            cls.UPLINK_BRIDGE,
+            cls.VLAN_DEV_IN, "70",
+        )
+        BridgeTools.add_ovs_port(
+            cls.UPLINK_BRIDGE,
+            cls.VLAN_DEV_OUT, "71",
+        )
 
         # dummy uplink interface
         vlan = "10"
 
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_DHCP, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_PATCH, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_ETH_PORT, None)
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_DHCP, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_PATCH, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_ETH_PORT, None,
+        )
 
         cls.thread = start_ryu_app_thread(test_setup)
         cls.uplink_br_controller = uplink_bridge_controller_reference.result()
@@ -193,8 +209,10 @@ class UplinkBridgeWithNonNATTest(unittest.TestCase):
 
     def testFlowSnapshotMatch(self):
         cls = self.__class__
-        assert_bridge_snapshot_match(self, self.UPLINK_BRIDGE, self.service_manager,
-                                     include_stats=False)
+        assert_bridge_snapshot_match(
+            self, self.UPLINK_BRIDGE, self.service_manager,
+            include_stats=False,
+        )
 
 
 class UplinkBridgeWithNonNATTestVlan(unittest.TestCase):
@@ -206,7 +224,7 @@ class UplinkBridgeWithNonNATTestVlan(unittest.TestCase):
     UPLINK_DHCP = 'test_dhcp0'
     UPLINK_PATCH = 'test_patch_p2'
     UPLINK_ETH_PORT = 'test_eth3'
-    VLAN_TAG='100'
+    VLAN_TAG = '100'
     VLAN_DEV_IN = "test_v_in"
     VLAN_DEV_OUT = "test_v_out"
 
@@ -226,9 +244,11 @@ class UplinkBridgeWithNonNATTestVlan(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -262,24 +282,36 @@ class UplinkBridgeWithNonNATTestVlan(unittest.TestCase):
         BridgeTools.create_bridge(cls.BRIDGE, cls.BRIDGE)
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
 
-        BridgeTools.create_veth_pair(cls.VLAN_DEV_IN,
-                                     cls.VLAN_DEV_OUT)
+        BridgeTools.create_veth_pair(
+            cls.VLAN_DEV_IN,
+            cls.VLAN_DEV_OUT,
+        )
         # Add to OVS,
-        BridgeTools.add_ovs_port(cls.UPLINK_BRIDGE,
-                                 cls.VLAN_DEV_IN, "70")
-        BridgeTools.add_ovs_port(cls.UPLINK_BRIDGE,
-                                 cls.VLAN_DEV_OUT, "71")
+        BridgeTools.add_ovs_port(
+            cls.UPLINK_BRIDGE,
+            cls.VLAN_DEV_IN, "70",
+        )
+        BridgeTools.add_ovs_port(
+            cls.UPLINK_BRIDGE,
+            cls.VLAN_DEV_OUT, "71",
+        )
 
         # validate vlan id set
         vlan = "10"
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
 
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_DHCP, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_PATCH, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_ETH_PORT, None)
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_DHCP, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_PATCH, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_ETH_PORT, None,
+        )
 
         cls.thread = start_ryu_app_thread(test_setup)
         cls.uplink_br_controller = uplink_bridge_controller_reference.result()
@@ -294,10 +326,14 @@ class UplinkBridgeWithNonNATTestVlan(unittest.TestCase):
 
     def testFlowSnapshotMatch(self):
         cls = self.__class__
-        assert_bridge_snapshot_match(self, self.UPLINK_BRIDGE, self.service_manager,
-                                     include_stats=False)
+        assert_bridge_snapshot_match(
+            self, self.UPLINK_BRIDGE, self.service_manager,
+            include_stats=False,
+        )
 
 
+@unittest.skip
+# this reset default GW
 class UplinkBridgeWithNonNATTest_IP_VLAN(unittest.TestCase):
     BRIDGE = 'testing_br'
     MAC_DEST = "5e:cc:cc:b1:49:4b"
@@ -307,8 +343,8 @@ class UplinkBridgeWithNonNATTest_IP_VLAN(unittest.TestCase):
     UPLINK_DHCP = 'test_dhcp0'
     UPLINK_PATCH = 'test_patch_p2'
     UPLINK_ETH_PORT = 'test_eth3'
-    VLAN_TAG='500'
-    SGi_IP="1.6.5.7"
+    VLAN_TAG = '500'
+    SGi_IP = "1.6.5.7"
 
     @classmethod
     def setUpClass(cls):
@@ -326,9 +362,11 @@ class UplinkBridgeWithNonNATTest_IP_VLAN(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -364,19 +402,27 @@ class UplinkBridgeWithNonNATTest_IP_VLAN(unittest.TestCase):
         vlan = "10"
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
 
-        set_ip_cmd = ["ip",
-                      "addr", "replace",
-                      "2.33.44.6",
-                      "dev",
-                      cls.UPLINK_BRIDGE]
+        set_ip_cmd = [
+            "ip",
+            "addr", "replace",
+            "2.33.44.6",
+            "dev",
+            cls.UPLINK_BRIDGE,
+        ]
         subprocess.check_call(set_ip_cmd)
 
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_DHCP, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_PATCH, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_ETH_PORT, None)
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_DHCP, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_PATCH, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_ETH_PORT, None,
+        )
 
         cls.thread = start_ryu_app_thread(test_setup)
         cls.uplink_br_controller = uplink_bridge_controller_reference.result()
@@ -391,12 +437,16 @@ class UplinkBridgeWithNonNATTest_IP_VLAN(unittest.TestCase):
 
     def testFlowSnapshotMatch(self):
         cls = self.__class__
-        assert_bridge_snapshot_match(self, self.UPLINK_BRIDGE, self.service_manager,
-                                     include_stats=False)
+        assert_bridge_snapshot_match(
+            self, self.UPLINK_BRIDGE, self.service_manager,
+            include_stats=False,
+        )
 
         self.assertIn(cls.SGi_IP, get_iface_ipv4(cls.UPLINK_BRIDGE), "ip not found")
 
 
+@unittest.skip
+# this reset default GW
 class UplinkBridgeWithNonNATTest_IP_VLAN_GW(unittest.TestCase):
     BRIDGE = 'testing_br'
     MAC_DEST = "5e:cc:cc:b1:49:4b"
@@ -426,9 +476,11 @@ class UplinkBridgeWithNonNATTest_IP_VLAN_GW(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -464,23 +516,33 @@ class UplinkBridgeWithNonNATTest_IP_VLAN_GW(unittest.TestCase):
         # validate vlan id set
         vlan = "10"
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
-        subprocess.Popen(["ovs-vsctl", "set", "port", cls.UPLINK_BRIDGE,
-                          "tag=" + vlan]).wait()
+        subprocess.Popen([
+            "ovs-vsctl", "set", "port", cls.UPLINK_BRIDGE,
+            "tag=" + vlan,
+        ]).wait()
         assert get_ovsdb_port_tag(cls.UPLINK_BRIDGE) == vlan
 
-        set_ip_cmd = ["ip",
-                      "addr", "replace",
-                      "2.33.44.6",
-                      "dev",
-                      cls.UPLINK_BRIDGE]
+        set_ip_cmd = [
+            "ip",
+            "addr", "replace",
+            "2.33.44.6",
+            "dev",
+            cls.UPLINK_BRIDGE,
+        ]
         subprocess.check_call(set_ip_cmd)
 
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_DHCP, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_PATCH, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_ETH_PORT, None)
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_DHCP, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_PATCH, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_ETH_PORT, None,
+        )
 
         cls.thread = start_ryu_app_thread(test_setup)
         cls.uplink_br_controller = uplink_bridge_controller_reference.result()
@@ -495,14 +557,19 @@ class UplinkBridgeWithNonNATTest_IP_VLAN_GW(unittest.TestCase):
 
     def testFlowSnapshotMatch(self):
         cls = self.__class__
-        assert_bridge_snapshot_match(self, self.UPLINK_BRIDGE,
-                                     self.service_manager,
-                                     include_stats=False)
+        assert_bridge_snapshot_match(
+            self, self.UPLINK_BRIDGE,
+            self.service_manager,
+            include_stats=False,
+        )
 
-        self.assertIn(cls.SGi_GW, get_iface_gw_ipv4(cls.UPLINK_BRIDGE),
-                      "gw not found")
+        self.assertIn(
+            cls.SGi_GW, get_iface_gw_ipv4(cls.UPLINK_BRIDGE),
+            "gw not found",
+        )
 
 
+@unittest.skip
 class UplinkBridgeWithNonNatUplinkConnect_Test(unittest.TestCase):
     BRIDGE = 'testing_br'
     IFACE = 'testing_br'
@@ -516,7 +583,6 @@ class UplinkBridgeWithNonNatUplinkConnect_Test(unittest.TestCase):
     UPLINK_BRIDGE = 'upt_br0'
     UPLINK_PATCH = 'test_patch_p2'
     ROUTER_IP = "10.55.0.211"
-
 
     @classmethod
     def _setup_vlan_network(cls, vlan: str):
@@ -545,20 +611,28 @@ class UplinkBridgeWithNonNatUplinkConnect_Test(unittest.TestCase):
         cls._setup_vlan_network("0")
 
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_DHCP, None)
-        BridgeTools.create_internal_iface(cls.UPLINK_BRIDGE,
-                                          cls.UPLINK_PATCH, None)
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_DHCP, None,
+        )
+        BridgeTools.create_internal_iface(
+            cls.UPLINK_BRIDGE,
+            cls.UPLINK_PATCH, None,
+        )
 
         check_connectivity(cls.ROUTER_IP, cls.UPLINK_ETH_PORT)
+
+        BridgeTools.add_ovs_port(cls.UPLINK_BRIDGE, cls.UPLINK_ETH_PORT, "200")
 
         # this is setup after AGW boot up in NATed mode.
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -603,12 +677,12 @@ class UplinkBridgeWithNonNatUplinkConnect_Test(unittest.TestCase):
         BridgeTools.destroy_bridge(cls.UPLINK_BRIDGE)
         BridgeTools.destroy_bridge(cls.NET_SW_BR)
 
-    # TODO this test updates resolve.conf, once that is fixed turn-on the test
-    @unittest.skip
     def testFlowSnapshotMatch(self):
         cls = self.__class__
-        assert_bridge_snapshot_match(self, self.UPLINK_BRIDGE, self.service_manager,
-                                     include_stats=False)
+        assert_bridge_snapshot_match(
+            self, self.UPLINK_BRIDGE, self.service_manager,
+            include_stats=False,
+        )
         self.assertEqual(get_ovsdb_port_tag(cls.UPLINK_BRIDGE), '[]')
         # after Non NAT init, router shld be accessible.
         # manually start DHCP client on up-br
@@ -621,7 +695,7 @@ class UplinkBridgeTestNatIPAddr(unittest.TestCase):
     BRIDGE_IP = '192.168.128.1'
     BRIDGE_ETH_PORT = "eth_t1"
     UPLINK_BRIDGE = 'upt_br0'
-    SGi_IP="1.6.5.77"
+    SGi_IP = "1.6.5.77"
 
     @classmethod
     def setUpClass(cls):
@@ -639,9 +713,11 @@ class UplinkBridgeTestNatIPAddr(unittest.TestCase):
         uplink_bridge_controller_reference = Future()
         testing_controller_reference = Future()
         test_setup = TestSetup(
-            apps=[PipelinedController.UplinkBridge,
-                  PipelinedController.Testing,
-                  PipelinedController.StartupFlows],
+            apps=[
+                PipelinedController.UplinkBridge,
+                PipelinedController.Testing,
+                PipelinedController.StartupFlows,
+            ],
             references={
                 PipelinedController.UplinkBridge:
                     uplink_bridge_controller_reference,
@@ -668,8 +744,10 @@ class UplinkBridgeTestNatIPAddr(unittest.TestCase):
 
         BridgeTools.create_bridge(cls.BRIDGE, cls.BRIDGE)
         BridgeTools.create_bridge(cls.UPLINK_BRIDGE, cls.UPLINK_BRIDGE)
-        BridgeTools.create_internal_iface(cls.BRIDGE,
-                                          cls.BRIDGE_ETH_PORT, '2.2.2.2')
+        BridgeTools.create_internal_iface(
+            cls.BRIDGE,
+            cls.BRIDGE_ETH_PORT, '2.2.2.2',
+        )
         cls.thread = start_ryu_app_thread(test_setup)
         cls.uplink_br_controller = uplink_bridge_controller_reference.result()
         cls.testing_controller = testing_controller_reference.result()
@@ -696,8 +774,10 @@ def check_connectivity(dst: str, dev_name: str):
         ifdown_if = ["dhclient", dev_name]
         subprocess.check_call(ifdown_if)
     except subprocess.SubprocessError as e:
-        logging.warning("Error while setting dhcl IP: %s: %s",
-                        dev_name, e)
+        logging.warning(
+            "Error while setting dhcl IP: %s: %s",
+            dev_name, e,
+        )
         return
     hub.sleep(1)
 
@@ -712,8 +792,10 @@ def check_connectivity(dst: str, dev_name: str):
 
 
 def validate_routing_table(dst: str, dev_name: str) -> str:
-    dump1 = subprocess.Popen(["ip", "r", "get", dst],
-                             stdout=subprocess.PIPE)
+    dump1 = subprocess.Popen(
+        ["ip", "r", "get", dst],
+        stdout=subprocess.PIPE,
+    )
     for line in dump1.stdout.readlines():
         if "dev" not in str(line):
             continue
@@ -723,6 +805,10 @@ def validate_routing_table(dst: str, dev_name: str) -> str:
         except ValueError:
             pass
     logging.error("could not find route to %s via %s", dst, dev_name)
-    logging.error("dump1: %s", str(dump1))
+    dump1 = subprocess.Popen(
+        ["ovs-ofctl", "dump-flows", cls.UPLINK_BRIDGE],
+        stdout=subprocess.PIPE,
+    )
+    for line in dump1.stdout.readlines():
+        print("pbs: %s", line)
     assert 0
-

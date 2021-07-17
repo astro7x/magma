@@ -40,11 +40,6 @@ resource "helm_release" "orc8r" {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
   }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
-  }
 }
 
 resource "helm_release" "lte-orc8r" {
@@ -69,11 +64,6 @@ resource "helm_release" "lte-orc8r" {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
   }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
-  }
 }
 
 resource "helm_release" "feg-orc8r" {
@@ -97,11 +87,6 @@ resource "helm_release" "feg-orc8r" {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
   }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
-  }
 }
 
 resource "helm_release" "cwf-orc8r" {
@@ -120,11 +105,6 @@ resource "helm_release" "cwf-orc8r" {
   set_sensitive {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
-  }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
   }
 }
 
@@ -147,11 +127,6 @@ resource "helm_release" "fbinternal-orc8r" {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
   }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
-  }
 }
 
 resource "helm_release" "wifi-orc8r" {
@@ -172,11 +147,6 @@ resource "helm_release" "wifi-orc8r" {
     name  = "controller.spec.database.pass"
     value = var.orc8r_db_pass
   }
-
-  set_sensitive {
-    name  = "nms.magmalte.env.mysql_pass"
-    value = var.nms_db_pass
-  }
 }
 
 
@@ -187,6 +157,7 @@ data "template_file" "orc8r_values" {
     docker_registry   = var.docker_registry
     docker_tag        = local.orc8r_tag
 
+    magma_uuid = var.magma_uuid
     certs_secret   = kubernetes_secret.orc8r_certs.metadata.0.name
     configs_secret = kubernetes_secret.orc8r_configs.metadata.0.name
     envdir_secret  = kubernetes_secret.orc8r_envdir.metadata.0.name
@@ -203,15 +174,14 @@ data "template_file" "orc8r_values" {
     api_hostname        = format("api.%s", var.orc8r_domain_name)
     nms_hostname        = format("*.nms.%s", var.orc8r_domain_name)
 
-    orc8r_db_name = var.orc8r_db_name
-    orc8r_db_host = var.orc8r_db_host
-    orc8r_db_port = var.orc8r_db_port
-    orc8r_db_user = var.orc8r_db_user
+    orc8r_db_name    = var.orc8r_db_name
+    orc8r_db_host    = var.orc8r_db_host
+    orc8r_db_port    = var.orc8r_db_port
+    orc8r_db_dialect = var.orc8r_db_dialect
+    orc8r_db_user    = var.orc8r_db_user
+    orc8r_db_pass    = var.orc8r_db_pass
 
     deploy_nms  = var.deploy_nms
-    nms_db_name = var.nms_db_name
-    nms_db_host = var.nms_db_host
-    nms_db_user = var.nms_db_user
 
     metrics_pvc_promcfg  = kubernetes_persistent_volume_claim.storage["promcfg"].metadata.0.name
     metrics_pvc_promdata = kubernetes_persistent_volume_claim.storage["promdata"].metadata.0.name

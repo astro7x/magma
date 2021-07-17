@@ -25,30 +25,25 @@ require (
 	github.com/emakeev/milenage v1.0.0
 	github.com/emakeev/snowflake v0.0.0-20200206205012-767080b052fe
 	github.com/envoyproxy/go-control-plane v0.9.4
-	github.com/fiorix/go-diameter/v4 v4.0.2
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-openapi/swag v0.19.5
+	github.com/fiorix/go-diameter/v4 v4.0.4
+	github.com/go-openapi/swag v0.19.15
 	github.com/go-redis/redis v6.14.1+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.2
 	github.com/ishidawataru/sctp v0.0.0-20191218070446-00ab2ac2db07
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.5.1
+	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.9.1
-	github.com/shirou/gopsutil v2.20.3+incompatible
+	github.com/prometheus/common v0.26.0
+	github.com/shirou/gopsutil/v3 v3.21.5
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/thoas/go-funk v0.7.0
-	github.com/wmnsk/go-gtp v0.7.15
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
-	golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	github.com/wmnsk/go-gtp v0.7.26
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	google.golang.org/grpc v1.33.2
-	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	google.golang.org/protobuf v1.26.0
 	layeh.com/radius v0.0.0-20200615152116-663b41c3bf86
 	magma/feg/cloud/go v0.0.0
 	magma/feg/cloud/go/protos v0.0.0

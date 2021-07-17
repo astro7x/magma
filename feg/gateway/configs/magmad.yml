@@ -11,11 +11,15 @@
 # limitations under the License.
 
 log_level: INFO
+
+print_grpc_payload: false
+
 # List of services for magmad to control
 magma_services:
   - control_proxy
   - redis
   - session_proxy
+  - s8_proxy
   - s6a_proxy
   - csfb
   - feg_hello

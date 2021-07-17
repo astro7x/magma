@@ -76,6 +76,7 @@ type RequestedServiceUnit struct {
 func getCCRHandler(srv *OCSDiamServer) diam.HandlerFunc {
 	return func(c diam.Conn, m *diam.Message) {
 		glog.V(2).Infof("Received CCR from %s\n", c.RemoteAddr())
+		glog.V(2).Infof("Received Gy CCR message\n%s\n", m)
 		srv.lastDiamMessageReceived = m
 		var ccr ccrMessage
 		if err := m.Unmarshal(&ccr); err != nil {
@@ -181,10 +182,11 @@ func decrementUsedCredit(credit *CreditBucket, usage *usedServiceUnit) {
 }
 
 func decrementOrZero(first, second uint64) uint64 {
-	result := first - second
-	if result < 0 {
+	if second >= first {
+		// subtraction between uints is never negative!!
 		return 0
 	}
+	result := first - second
 	return result
 }
 
@@ -210,6 +212,7 @@ func sendAnswer(
 	// SessionID must be the first AVP
 	a.InsertAVP(diam.NewAVP(avp.SessionID, avp.Mbit, 0, ccr.SessionID))
 
+	glog.V(2).Infof("Sending Gy CCA message\n%s\n", a)
 	_, err := a.WriteTo(conn)
 	if err != nil {
 		glog.Errorf("Failed to write message to %s: %s\n%s\n",
@@ -310,7 +313,7 @@ func toFinalUnitActionAVP(finalUnitAction protos.FinalUnitAction, redirectAddres
 	}
 
 	if finalUnitAction == protos.FinalUnitAction_Restrict {
-		if restrict_rules == nil || len(restrict_rules) == 0 {
+		if len(restrict_rules) == 0 {
 			glog.Errorf("RestrictRules must be provided when final unit action is set to restrict\n")
 			return fuaAVPs
 		}

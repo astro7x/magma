@@ -1,7 +1,7 @@
-From b2bf6b4bb70e7b0ac296ed0bdd3f9e5ae5ab3b72 Mon Sep 17 00:00:00 2001
+From 5c1e8256e36ccd942f077671f7c5bfb5b17bda46 Mon Sep 17 00:00:00 2001
 From: Pravin B Shelar <pbshelar@fb.com>
 Date: Mon, 24 Feb 2020 04:29:56 +0000
-Subject: [PATCH 02/11] userspace: IPFIX: Add tunnel type GTP
+Subject: [PATCH 02/19] userspace: IPFIX: Add tunnel type GTP
 
 Add support for ingress/egress tunnel type GTP
 in IPFIX.
@@ -56,7 +56,7 @@ index b89dfdd52..50f95e637 100644
  
  int
 diff --git a/lib/netdev-vport.c b/lib/netdev-vport.c
-index e7ddf1547..7158ef428 100644
+index 2a7d14e99..0f3d587e0 100644
 --- a/lib/netdev-vport.c
 +++ b/lib/netdev-vport.c
 @@ -578,6 +578,7 @@ set_tunnel_config(struct netdev *dev_, const struct smap *args, char **errp)
@@ -150,7 +150,7 @@ index 796eb6f88..ed0a4ace0 100644
              return 4;
          case DPIF_IPFIX_TUNNEL_VXLAN:
 diff --git a/ofproto/ofproto-dpif-sflow.c b/ofproto/ofproto-dpif-sflow.c
-index f616fb2bb..e0e6e07c9 100644
+index b39482dbf..9de054456 100644
 --- a/ofproto/ofproto-dpif-sflow.c
 +++ b/ofproto/ofproto-dpif-sflow.c
 @@ -61,7 +61,8 @@ enum dpif_sflow_tunnel_type {

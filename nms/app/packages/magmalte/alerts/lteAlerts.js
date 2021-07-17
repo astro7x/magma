@@ -20,6 +20,14 @@ export default function getLteAlerts(
   networkID: string,
 ): {[string]: prom_alert_config} {
   return {
+    'Certificate Expiring Soon': {
+      alert: 'Certificate Expiring Soon',
+      expr: `cert_expires_in_hours > 720`,
+      labels: {severity: 'major'},
+      annotations: {
+        description: `Alerts when certificate necessary for Orc8r function is expiring soon`,
+      },
+    },
     'Service Restart Alert': {
       alert: 'Service Restart Alert',
       expr: `increase(service_restart_status{networkID=~"${networkID}"}[5m]) > 0`,
@@ -56,6 +64,23 @@ export default function getLteAlerts(
         description: 'Alerts when we have unexpected service restarts',
       },
     },
+    'Service Crashlooping Alert': {
+      alert: 'Service Crashlooping Alert',
+      expr: `increase(unexpected_service_restarts{networkID=~"${networkID}"}[5m]) > 3`,
+      labels: {severity: 'critical'},
+      annotations: {
+        description: 'Alerts when we have services crashlooping',
+      },
+    },
+    'Sctpd Crashlooping Alert': {
+      alert: 'Sctpd Crashlooping Alert',
+      expr: `increase(unexpected_service_restarts{networkID=~"${networkID}", service_name="sctpd"}[5m]) > 3`,
+      labels: {severity: 'critical'},
+      annotations: {
+        description: 'Alerts when we have sctpd service crashlooping',
+        remediation: 'Reboot the gateway',
+      },
+    },
     'Bootstrap Exception Alert': {
       alert: 'Bootstrap Exception Alert',
       expr: `increase(bootstrap_exception{networkID=~"${networkID}"}[5m]) > 0`,
@@ -74,7 +99,10 @@ export default function getLteAlerts(
       alert: 'S1 Setup Failure',
       expr: `increase(s1_setup{result="failure", networkID=~"${networkID}"}[5m]) > 0`,
       labels: {severity: 'major'},
-      annotations: {description: 'Alerts when we have S1 setup failures'},
+      annotations: {
+        description: 'Alerts when we have S1 setup failures',
+        remediation: 'Restart sctpd service',
+      },
     },
     'UE attach Failure': {
       alert: 'UE attach Failure',
@@ -82,11 +110,24 @@ export default function getLteAlerts(
       labels: {severity: 'minor'},
       annotations: {description: 'Alerts when we have UE attach failures'},
     },
+    'High duplicate attach requests': {
+      alert: 'High duplicate attach requests',
+      expr: `increase(duplicate_attach_request{networkID="${networkID}"}[5m]) > 200`,
+      labels: {severity: 'critical'},
+      annotations: {
+        description:
+          'Alert when there are a large number of duplicate attach requests',
+      },
+    },
     'Gateway Checkin Failure': {
       alert: 'Gateway Checkin Failure',
-      expr: `checkin_status{networkID=~"${networkID}" < 1`,
+      expr: `checkin_status{networkID=~"${networkID}"} < 1`,
       labels: {severity: 'critical'},
-      annotations: {description: 'Alerts when we have gateway checkin failure'},
+      annotations: {
+        description: 'Alerts when we have gateway checkin failure',
+        troubleshooting:
+          'Run checkin_cli.py script on the gateway and follow resolution steps suggested',
+      },
     },
     'Dip in Connected UEs': {
       alert: 'Dip in Connected UEs',

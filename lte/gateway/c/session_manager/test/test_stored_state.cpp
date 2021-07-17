@@ -11,14 +11,14 @@
  * limitations under the License.
  */
 
-#include <memory>
-
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include <memory>
+
+#include "magma_logging.h"
 #include "ProtobufCreators.h"
 #include "StoredState.h"
-#include "magma_logging.h"
 
 using ::testing::Test;
 
@@ -113,10 +113,26 @@ class StoredStateTest : public ::testing::Test {
     return stored;
   }
 
+  PolicyStatsMap get_policy_stats_map() {
+    PolicyStatsMap stored;
+    stored["rule1"]                       = StatsPerPolicy();
+    stored["rule1"].last_reported_version = 1;
+    stored["rule1"].stats_map[1]          = RuleStats{1, 2, 3, 4};
+    stored["rule2"]                       = StatsPerPolicy();
+    stored["rule2"].last_reported_version = 2;
+    stored["rule2"].stats_map[1]          = RuleStats{5, 2, 3, 4};
+    stored["rule2"].stats_map[2]          = RuleStats{50, 20, 30, 40};
+    return stored;
+  }
+
   BearerIDByPolicyID get_bearer_id_by_policy() {
     BearerIDByPolicyID stored;
-    stored[PolicyID(DYNAMIC, "rule1")] = 32;
-    stored[PolicyID(STATIC, "rule1")]  = 64;
+    stored[PolicyID(DYNAMIC, "rule1")].bearer_id = 32;
+    stored[PolicyID(DYNAMIC, "rule1")].teids.set_agw_teid(1);
+    stored[PolicyID(DYNAMIC, "rule1")].teids.set_enb_teid(2);
+    stored[PolicyID(STATIC, "rule1")].bearer_id = 64;
+    stored[PolicyID(STATIC, "rule1")].teids.set_agw_teid(3);
+    stored[PolicyID(STATIC, "rule1")].teids.set_enb_teid(4);
     return stored;
   }
 
@@ -145,6 +161,8 @@ class StoredStateTest : public ::testing::Test {
     stored.bearer_id_by_policy = get_bearer_id_by_policy();
 
     stored.request_number = 1;
+
+    stored.policy_version_and_stats = get_policy_stats_map();
 
     return stored;
   }
@@ -202,7 +220,7 @@ TEST_F(StoredStateTest, test_stored_bearer_id_by_policy) {
   auto stored       = get_bearer_id_by_policy();
   auto serialized   = serialize_bearer_id_by_policy(stored);
   auto deserialized = deserialize_bearer_id_by_policy(serialized);
-  EXPECT_EQ(stored[PolicyID(DYNAMIC, "rule1")], 32);
+  EXPECT_EQ(stored[PolicyID(DYNAMIC, "rule1")].bearer_id, 32);
   EXPECT_EQ(stored.size(), deserialized.size());
   EXPECT_EQ(
       stored[PolicyID(DYNAMIC, "rule1")],
@@ -347,6 +365,53 @@ TEST_F(StoredStateTest, test_stored_session) {
   EXPECT_EQ(deserialized.request_number, 1);
   EXPECT_EQ(deserialized.pdp_start_time, 112233);
   EXPECT_EQ(deserialized.pdp_end_time, 332211);
+
+  EXPECT_EQ(
+      deserialized.policy_version_and_stats["rule1"].last_reported_version, 1);
+  EXPECT_EQ(deserialized.policy_version_and_stats["rule1"].stats_map[1].tx, 1);
+  EXPECT_EQ(deserialized.policy_version_and_stats["rule1"].stats_map[1].rx, 2);
+  EXPECT_EQ(
+      deserialized.policy_version_and_stats["rule2"].stats_map[1].dropped_tx,
+      3);
+  EXPECT_EQ(
+      deserialized.policy_version_and_stats["rule2"].stats_map[2].dropped_rx,
+      40);
+}
+
+TEST_F(StoredStateTest, test_policy_stats_map) {
+  PolicyStatsMap original;
+  StatsPerPolicy og_stats1, og_stats2;
+  const std::string rule1 = "rule1";
+  const std::string rule2 = "rule2";
+
+  og_stats1.current_version       = 2;
+  og_stats1.last_reported_version = 1;
+  original[rule1]                 = og_stats1;
+
+  og_stats2.current_version       = 4;
+  og_stats2.last_reported_version = 3;
+  original[rule2]                 = og_stats2;
+
+  std::string serialized      = serialize_policy_stats_map(original);
+  PolicyStatsMap deserialized = deserialize_policy_stats_map(serialized);
+
+  EXPECT_EQ(2, deserialized.size());
+
+  StatsPerPolicy deserialized_stats1 = deserialized[rule1];
+  StatsPerPolicy deserialized_stats2 = deserialized[rule2];
+
+  EXPECT_EQ(og_stats1.current_version, deserialized_stats1.current_version);
+  EXPECT_EQ(
+      og_stats1.last_reported_version,
+      deserialized_stats1.last_reported_version);
+
+  EXPECT_EQ(og_stats2.current_version, deserialized_stats2.current_version);
+  EXPECT_EQ(
+      og_stats2.last_reported_version,
+      deserialized_stats2.last_reported_version);
+
+  // Check that the value is empty by default
+  EXPECT_FALSE(get_default_update_criteria().policy_version_and_stats);
 }
 
 int main(int argc, char** argv) {

@@ -18,8 +18,10 @@ from typing import Any, List
 import magma.magmad.events as magmad_events
 from magma.common.service import MagmaService
 from magma.common.streamer import StreamerClient
-from magma.configuration.mconfig_managers import MconfigManager, \
-    load_service_mconfig
+from magma.configuration.mconfig_managers import (
+    MconfigManager,
+    load_service_mconfig,
+)
 from magma.magmad.service_manager import ServiceManager
 from orc8r.protos.mconfig import mconfigs_pb2
 from orc8r.protos.mconfig_pb2 import GatewayConfigsDigest
@@ -34,9 +36,11 @@ class ConfigManager(StreamerClient.Callback):
     JSON format.
     """
 
-    def __init__(self, services: List[str], service_manager: ServiceManager,
-                 magmad_service: MagmaService, mconfig_manager: MconfigManager,
-                 allow_unknown_fields: bool = True, loop=None) -> None:
+    def __init__(
+        self, services: List[str], service_manager: ServiceManager,
+        magmad_service: MagmaService, mconfig_manager: MconfigManager,
+        allow_unknown_fields: bool = True, loop=None,
+    ) -> None:
         """
         Args:
             services: List of services to manage
@@ -63,7 +67,8 @@ class ConfigManager(StreamerClient.Callback):
         if digest is None:
             return None
         mconfig_digest_proto = GatewayConfigsDigest(
-            md5_hex_digest=digest.md5_hex_digest)
+            md5_hex_digest=digest.md5_hex_digest,
+        )
         return mconfig_digest_proto
 
     def process_update(self, stream_name, updates, resync):
@@ -102,7 +107,7 @@ class ConfigManager(StreamerClient.Callback):
 
         def did_mconfig_change(serv_name):
             return mconfig.configs_by_key.get(serv_name) != \
-                   self._mconfig.configs_by_key.get(serv_name)
+                self._mconfig.configs_by_key.get(serv_name)
 
         # Reload magmad configs locally
         if did_mconfig_change('magmad'):
@@ -110,7 +115,7 @@ class ConfigManager(StreamerClient.Callback):
                 self._service_manager.update_dynamic_services(
                     load_service_mconfig('magmad', mconfigs_pb2.MagmaD())
                     .dynamic_services,
-                )
+                ),
             )
 
         services_to_restart = [

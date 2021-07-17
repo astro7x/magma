@@ -11,13 +11,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import abc
 import asyncio
 import logging
 import time
 from contextlib import suppress
 from typing import Optional, cast
-
-import abc
 
 
 class Job(abc.ABC):
@@ -33,7 +32,8 @@ class Job(abc.ABC):
     def __init__(
             self,
             interval: int,
-            loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None:
         if loop is None:
             self._loop = asyncio.get_event_loop()
         else:

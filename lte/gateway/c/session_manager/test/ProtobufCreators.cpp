@@ -11,8 +11,11 @@
  * limitations under the License.
  */
 
-#include "ProtobufCreators.h"
+#include <vector>
+#include <string>
+
 #include "Consts.h"
+#include "ProtobufCreators.h"
 
 namespace magma {
 
@@ -81,15 +84,21 @@ void create_rule_record(
   rule_record->set_rule_id(rule_id);
   rule_record->set_bytes_rx(bytes_rx);
   rule_record->set_bytes_tx(bytes_tx);
+  rule_record->set_rule_version(1);
+}
+
+void create_rule_record(
+    const std::string& imsi, const std::string& ip, const std::string& rule_id,
+    uint64_t bytes_rx, uint64_t bytes_tx, uint32_t teid,
+    RuleRecord* rule_record) {
+  create_rule_record(imsi, ip, rule_id, bytes_rx, bytes_tx, rule_record);
+  rule_record->set_teid(teid);
 }
 
 void create_rule_record(
     const std::string& imsi, const std::string& ip, const std::string& rule_id,
     uint64_t bytes_rx, uint64_t bytes_tx, RuleRecord* rule_record) {
-  rule_record->set_sid(imsi);
-  rule_record->set_rule_id(rule_id);
-  rule_record->set_bytes_rx(bytes_rx);
-  rule_record->set_bytes_tx(bytes_tx);
+  create_rule_record(imsi, rule_id, bytes_rx, bytes_tx, rule_record);
   rule_record->set_dropped_rx(0);
   rule_record->set_dropped_tx(0);
   rule_record->set_ue_ipv4(ip);
@@ -99,6 +108,16 @@ void create_rule_record(
     const std::string& imsi, const std::string& ip, const std::string& rule_id,
     uint64_t bytes_rx, uint64_t bytes_tx, uint64_t dropped_rx,
     uint64_t dropped_tx, RuleRecord* rule_record) {
+  create_rule_record(imsi, rule_id, bytes_rx, bytes_tx, rule_record);
+  rule_record->set_dropped_rx(dropped_rx);
+  rule_record->set_dropped_tx(dropped_tx);
+  rule_record->set_ue_ipv4(ip);
+}
+
+void create_rule_record(
+    const std::string& imsi, const std::string& ip, const std::string& rule_id,
+    uint64_t rule_version, uint64_t bytes_rx, uint64_t bytes_tx,
+    uint64_t dropped_rx, uint64_t dropped_tx, RuleRecord* rule_record) {
   rule_record->set_sid(imsi);
   rule_record->set_rule_id(rule_id);
   rule_record->set_bytes_rx(bytes_rx);
@@ -106,11 +125,13 @@ void create_rule_record(
   rule_record->set_dropped_rx(dropped_rx);
   rule_record->set_dropped_tx(dropped_tx);
   rule_record->set_ue_ipv4(ip);
+  rule_record->set_rule_version(rule_version);
 }
 
 void create_charging_credit(
     uint64_t volume, bool is_final, ChargingCredit* credit) {
-  create_granted_units(&volume, NULL, NULL, credit->mutable_granted_units());
+  create_granted_units(
+      &volume, nullptr, nullptr, credit->mutable_granted_units());
   credit->set_type(ChargingCredit::BYTES);
   credit->set_is_final(is_final);
 }
@@ -119,7 +140,8 @@ void create_charging_credit(
     uint64_t volume, ChargingCredit_FinalAction action,
     std::string redirect_server, std::string restrict_rule,
     ChargingCredit* credit) {
-  create_granted_units(&volume, NULL, NULL, credit->mutable_granted_units());
+  create_granted_units(
+      &volume, nullptr, nullptr, credit->mutable_granted_units());
   credit->set_type(ChargingCredit::BYTES);
   credit->set_is_final(true);
   credit->set_final_action(action);
@@ -387,34 +409,43 @@ void create_session_create_response(
   }
 }
 
-void create_policy_rule(
-    const std::string& rule_id, const std::string& m_key, uint32_t rating_group,
-    PolicyRule* rule) {
-  rule->set_id(rule_id);
-  rule->set_rating_group(rating_group);
-  rule->set_monitoring_key(m_key);
-  if (rating_group == 0 && m_key.length() > 0) {
-    rule->set_tracking_type(PolicyRule::ONLY_PCRF);
-  } else if (rating_group > 0 && m_key.length() == 0) {
-    rule->set_tracking_type(PolicyRule::ONLY_OCS);
-  } else if (rating_group > 0 && m_key.length() > 0) {
-    rule->set_tracking_type(PolicyRule::OCS_AND_PCRF);
+PolicyRule create_policy_rule(
+    const std::string& rule_id, const std::string& m_key, const uint32_t rg) {
+  PolicyRule rule;
+  rule.set_id(rule_id);
+  rule.set_rating_group(rg);
+  rule.set_monitoring_key(m_key);
+  if (rg == 0 && m_key.length() > 0) {
+    rule.set_tracking_type(PolicyRule::ONLY_PCRF);
+  } else if (rg > 0 && m_key.length() == 0) {
+    rule.set_tracking_type(PolicyRule::ONLY_OCS);
+  } else if (rg > 0 && m_key.length() > 0) {
+    rule.set_tracking_type(PolicyRule::OCS_AND_PCRF);
   } else {
-    rule->set_tracking_type(PolicyRule::NO_TRACKING);
+    rule.set_tracking_type(PolicyRule::NO_TRACKING);
   }
+  return rule;
+}
+
+PolicyRule create_policy_rule_with_qos(
+    const std::string& rule_id, const std::string& m_key, const uint32_t rg,
+    const int qci) {
+  PolicyRule rule = create_policy_rule(rule_id, m_key, rg);
+  rule.mutable_qos()->set_qci(static_cast<magma::lte::FlowQos_Qci>(qci));
+  return rule;
 }
 
 void create_granted_units(
     uint64_t* total, uint64_t* tx, uint64_t* rx, GrantedUnits* gsu) {
-  if (total != NULL) {
+  if (total != nullptr) {
     gsu->mutable_total()->set_is_valid(true);
     gsu->mutable_total()->set_volume(*total);
   }
-  if (tx != NULL) {
+  if (tx != nullptr) {
     gsu->mutable_tx()->set_is_valid(true);
     gsu->mutable_tx()->set_volume(*tx);
   }
-  if (rx != NULL) {
+  if (rx != nullptr) {
     gsu->mutable_rx()->set_is_valid(true);
     gsu->mutable_rx()->set_volume(*rx);
   }
@@ -423,7 +454,6 @@ void create_granted_units(
 magma::mconfig::SessionD get_default_mconfig() {
   magma::mconfig::SessionD mconfig;
   mconfig.set_log_level(magma::orc8r::LogLevel::INFO);
-  mconfig.set_relay_enabled(false);
   mconfig.set_gx_gy_relay_enabled(false);
   auto wallet_config = mconfig.mutable_wallet_exhaust_detection();
   wallet_config->set_terminate_on_exhaust(false);
@@ -432,12 +462,15 @@ magma::mconfig::SessionD get_default_mconfig() {
 
 PolicyBearerBindingRequest create_policy_bearer_bind_req(
     const std::string& imsi, const uint32_t linked_bearer_id,
-    const std::string& rule_id, const uint32_t bearer_id) {
+    const std::string& rule_id, const uint32_t bearer_id,
+    const uint32_t agw_teid, const uint32_t enb_teid) {
   PolicyBearerBindingRequest bearer_bind_req;
   bearer_bind_req.mutable_sid()->set_id(imsi);
   bearer_bind_req.set_linked_bearer_id(linked_bearer_id);
   bearer_bind_req.set_policy_rule_id(rule_id);
   bearer_bind_req.set_bearer_id(bearer_id);
+  bearer_bind_req.mutable_teids()->set_agw_teid(agw_teid);
+  bearer_bind_req.mutable_teids()->set_enb_teid(enb_teid);
   return bearer_bind_req;
 }
 
@@ -456,6 +489,18 @@ UpdateTunnelIdsRequest create_update_tunnel_ids_request(
   req.set_agw_teid(agw_teid);
   req.set_enb_teid(enb_teid);
   return req;
+}
+
+StaticRuleInstall create_static_rule_install(const std::string& rule_id) {
+  StaticRuleInstall rule_install;
+  rule_install.set_rule_id(rule_id);
+  return rule_install;
+}
+
+DynamicRuleInstall create_dynamic_rule_install(const PolicyRule& rule) {
+  DynamicRuleInstall rule_install;
+  rule_install.mutable_policy_rule()->CopyFrom(rule);
+  return rule_install;
 }
 
 }  // namespace magma

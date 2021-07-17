@@ -12,15 +12,16 @@ limitations under the License.
 """
 
 import asyncio
-from magma.enodebd.logger import EnodebdLogger as logger
 from xml.etree import ElementTree
+
 from aiohttp import web
 from magma.common.misc_utils import get_ip_from_if
 from magma.configuration.service_configs import load_service_config
-from magma.enodebd.enodeb_status import get_enb_status, \
-    update_status_metrics
+from magma.enodebd.enodeb_status import get_enb_status, update_status_metrics
+from magma.enodebd.logger import EnodebdLogger as logger
 from magma.enodebd.state_machines.enb_acs import EnodebAcsStateMachine
 from magma.enodebd.state_machines.enb_acs_manager import StateMachineManager
+
 from . import metrics
 
 
@@ -84,7 +85,8 @@ class StatsManager:
         create_server_func = self.loop.create_server(
             handler,
             host=get_ip_from_if(svc_config['tr069']['interface']),
-            port=svc_config['tr069']['perf_mgmt_port'])
+            port=svc_config['tr069']['perf_mgmt_port'],
+        )
 
         self._periodic_check_rf_tx()
         self.loop.run_until_complete(create_server_func)
@@ -224,8 +226,10 @@ class StatsManager:
                 try:
                     value = int(data_el.text)
                 except ValueError:
-                    logger.info('PM value (%s) of counter %s not integer',
-                                data_el.text, counter)
+                    logger.info(
+                        'PM value (%s) of counter %s not integer',
+                        data_el.text, counter,
+                    )
                     continue
             elif data_el.tag == 'CV':
                 # Check whether we want just one subcounter, or sum them all
@@ -252,12 +256,16 @@ class StatsManager:
                             value = value + int(sub_data_el.text)
                         index = index + 1
                 except ValueError:
-                    logger.error('PM value (%s) of counter %s not integer',
-                                 sub_data_el.text, pm_name)
+                    logger.error(
+                        'PM value (%s) of counter %s not integer',
+                        sub_data_el.text, pm_name,
+                    )
                     continue
             else:
-                logger.warning('Unknown PM data type (%s) of counter %s',
-                               data_el.tag, pm_name)
+                logger.warning(
+                    'Unknown PM data type (%s) of counter %s',
+                    data_el.tag, pm_name,
+                )
                 continue
 
             # Apply new value to metric

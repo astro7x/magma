@@ -34,12 +34,33 @@ pip3 install ansible fabric3 jsonpickle requests PyYAML
 vagrant plugin install vagrant-vbguest
 ```
 
+**Note**: In the case where installation of `fabric3` through pip was unsuccessful,
+try switching to other package installers. For example, for MacOS users, try
+running `brew install fabric`.
+
 If you are on MacOS, you should start Docker for Mac and increase the memory
-allocation for the Docker engine to at least 4GB (Preferences -> Advanced). 
-If you are running into build/test failures with Go that report "signal killed", you
-likely need to increase Docker's allocated resources.
+allocation for the Docker engine to at least 4GB (Preferences -> Resources ->
+Advanced). If you are running into build/test failures with Go that report
+"signal killed", you likely need to increase Docker's allocated resources.
 
 ![Increasing docker engine resources](assets/docker-config.png)
+
+## Downloading Magma
+
+You can find Magma code on [Github](https://github.com/magma/magma).
+
+To download Magma current version, or a specific release do the following:
+
+```bash
+git clone https://github.com/magma/magma.git
+cd magma
+
+# in case you want to use a specific version of Magma (for example v1.6)
+git checkout v1.6
+
+# to list all available releases
+git tag -l
+```
 
 ## Build/Deploy Tooling
 
@@ -63,12 +84,7 @@ aws configure
 Orchestrator deployment depends on the following components
 
 1. AWS account
-2. Docker image repository (e.g. Docker Hub, JFrog)
-3. Helm chart repository (e.g. JFrog, Github)*
 4. Registered domain for Orchestrator endpoints
-
-\* We describe setting up a private GitHub repository as a Helm repository in
-the [building Orchestrator](../orc8r/deploy_build.md) section.
 
 We recommend deploying the Orchestrator cloud component of Magma into AWS.
 Our open-source Terraform scripts target an AWS deployment environment, but if
@@ -87,13 +103,13 @@ you will use something else for managing AWS credentials.
 ### Access Gateways
 
 Access gateways (AGWs) can be deployed on to any AMD64 architecture machine
-which can support a Debian Linux installation. The basic system requirements
-for the AGW production hardware are:
+which can support a Debian or Ubuntu 20.04 Linux installation. The basic system
+requirements for the AGW production hardware are:
 
-1. 2+ physical ethernet interfaces
+1. 2+ physical Ethernet interfaces
 2. AMD64 dual-core processor around 2GHz clock speed or faster
-3. 2GB RAM
-4. 128GB-256GB SSD storage
+3. 4GB RAM
+4. 32GB or greater SSD storage
 
 In addition, in order to build the AGW, you should have on hand:
 

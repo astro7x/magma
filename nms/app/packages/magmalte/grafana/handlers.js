@@ -17,6 +17,7 @@
 import {isEqual, sortBy} from 'lodash';
 
 import MagmaV1API from '@fbcnms/platform-server/magma/index';
+import Sequelize from 'sequelize';
 import {AnalyticsDBData} from './dashboards/AnalyticsDashboards';
 import {CWF} from '@fbcnms/types/network';
 import {
@@ -33,6 +34,7 @@ import {
   SubscriberDBData,
   createDashboard,
 } from './dashboards/Dashboards';
+
 import {Organization} from '@fbcnms/sequelize-models';
 import {XWFMDBData} from './dashboards/XWFMDashboards';
 import {apiCredentials} from '@fbcnms/platform-server/config';
@@ -352,8 +354,12 @@ async function updateDatasourceIfChanged({
   errorTask?: Task,
 }> {
   const completedTasks: Array<Task> = [];
-  // Make sure API Endpoint matches
-  if (oldDS.url === makeAPIUrl(newDSParams.apiHost, newDSParams.nmsOrgID)) {
+  // Make sure API Endpoint matches and certs match
+  if (
+    oldDS.url === makeAPIUrl(newDSParams.apiHost, newDSParams.nmsOrgID) &&
+    oldDS.secureJsonData?.tlsClientCert === newDSParams.cert.toString() &&
+    oldDS.secureJsonData?.tlsClientKey === newDSParams.key.toString()
+  ) {
     return {completedTasks};
   }
   const updatedDS = makeDatasourceConfig(newDSParams);
@@ -456,10 +462,12 @@ export async function syncDashboards(
 }> {
   const completedTasks: Array<Task> = [];
   const grafanaOrgID = await getUserGrafanaOrgID(client, req.user);
-
   const org = await Organization.findOne({
     where: {
-      name: req.user.organization || '',
+      name: Sequelize.where(
+        Sequelize.fn('lower', Sequelize.col('name')),
+        Sequelize.fn('lower', req.user.organization || ''),
+      ),
     },
   });
   let networks: Array<string> = [];
